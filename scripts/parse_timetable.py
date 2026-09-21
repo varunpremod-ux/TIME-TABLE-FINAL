@@ -23,11 +23,12 @@ Names: a file called names.csv (columns: Roll, Name) lets the site greet each st
 ("Welcome, Anil Bose") once they type their roll number. TIMETABLE_NAMES=full (default)
 shows the name as written, first shows the first name only, off leaves names out.
 
-Clinics: a file called clinics.csv (Batch, Rolls, From, To, Posting, Location) lists which
-roll numbers go to which clinical posting between which dates. Each row is placed in the
-timetable's clinic slots (rows whose Class or Subject says "clinic"), or in the slot
-given by optional Days / Time columns. Entries from those rows carry from/to dates and
-the site shows them only on those dates.
+Clinics: a file called clinics.csv (Batch, Rolls, From, To, Posting) says only WHICH posting
+(subject) each batch of roll numbers has, and between which dates. Everything else (days,
+time, class name, location, faculty) is taken from the timetable's own clinic rows, the rows
+whose Class or Subject says "clinic". Each posting is placed in those slots. Optional Days,
+Time and Location columns in clinics.csv override the timetable. Entries carry from/to
+dates and the site shows them only on those dates.
 
 Batches: when the Roll No column holds batch letters (A, B, C, D) instead of numbers,
 they're converted to roll-number ranges using the class start time, because the batch
@@ -532,11 +533,25 @@ def load_clinics(path):
 
 
 def add_clinics(entries, rows, rules, term):
-    """Replace the timetable's own clinic rows with one entry per posting row and clinic slot."""
+    """Replace the timetable's own clinic rows with one entry per posting row and clinic slot.
+    The posting (subject) and roll numbers come from clinics.csv; day, time, class, location
+    and faculty come from the timetable's clinic row for that slot."""
     is_clinic = lambda e: re.search(r"clinic", f"{e['class']} {e['subject']}", re.I)
-    slots = sorted({(e["day"], e["time"]) for e in entries if is_clinic(e)},
-                   key=lambda x: (DAY_ORDER.index(x[0]), x[1]))
+    info = {}
+    for e in entries:
+        if is_clinic(e):
+            d = info.setdefault((e["day"], e["time"]), {"class": [], "location": [], "faculty": []})
+            for f in d:
+                if e[f] and e[f] not in d[f]:
+                    d[f].append(e[f])
+    slots = sorted(info, key=lambda x: (DAY_ORDER.index(x[0]), x[1]))
     entries = [e for e in entries if not is_clinic(e)]
+
+    def details(day, time):
+        d = info.get((day, time)) or next((v for (dd, _), v in info.items() if dd == day), None) \
+            or next(iter(info.values()), None) or {"class": [], "location": [], "faculty": []}
+        return (d["class"][0] if d["class"] else "Clinics", " / ".join(d["location"]), ", ".join(d["faculty"]))
+
     out, problems = [], set()
     for r in rows:
         if r["days"] or r["time"]:
@@ -551,9 +566,10 @@ def add_clinics(entries, rows, rules, term):
                 rolls, _, problem = map_batches(batch, time, rules)
                 if problem:
                     problems.add(problem)
-            out.append({"term": term, "day": day, "time": time, "class": "Clinics", "subject": r["posting"],
-                        "faculty": "", "rolls": rolls or "All", "batch": batch, "location": r["location"],
-                        "from": r["from"], "to": r["to"]})
+            cls, location, faculty = details(day, time)
+            out.append({"term": term, "day": day, "time": time, "class": cls, "subject": r["posting"],
+                        "faculty": faculty, "rolls": rolls or "All", "batch": batch,
+                        "location": r["location"] or location, "from": r["from"], "to": r["to"]})
     return entries + out, bool(slots), problems
 
 
