@@ -16,7 +16,7 @@ concurrency:
 
 env:
   # Shown as the page heading. Change to your batch name.
-  TIMETABLE_TITLE: "Batch timetable"
+  TIMETABLE_TITLE: "JAEGERS TIMETABLE"
   # Only classes under this term's heading are kept (VII, 7 or 7th all work).
   # Leave it as "" to keep every term in the files.
   TIMETABLE_TERM: "VII"
