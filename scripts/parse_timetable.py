@@ -25,8 +25,10 @@ shows the name as written, first shows the first name only, off leaves names out
 
 Clinics: a file called clinics.csv (Batch, Rolls, From, To, Posting) says only WHICH posting
 (subject) each batch of roll numbers has, and between which dates. Everything else (days,
-time, class name, location, faculty) is taken from the timetable's own clinic rows, the rows
-whose Class or Subject says "clinic". Each posting is placed in those slots. Optional Days,
+class name, location, faculty) is taken from the timetable's own clinic rows, the rows
+whose Class or Subject says "clinic". Clinics are shown ONCE a day, always at 10:30 - 13:00 (set TIMETABLE_CLINIC_TIME to
+change it), with the details of all the timetable rows that apply merged into that one entry.
+Each posting is placed on the days those rows apply. Optional Days,
 Time and Location columns in clinics.csv override the timetable. Entries carry from/to
 dates and the site shows them only on those dates.
 
@@ -38,18 +40,40 @@ changed without touching code by adding a batches.json file (see README).
 Holidays: a day marked "Holiday" (or "No classes") in the timetable, or a day that is
 listed with nothing written under it, is saved as a holiday and shown as one on the site.
 
+Weeks: every timetable file is treated as belonging to ONE week. The week comes from the dates
+in the file's rows, or from a date range in a PDF's heading ("21 SEP 2026 - 27 SEP 2026"), or from
+a date in the file name (surgery_2026-09-21.csv). Rows of that file then show only in that week.
+A file with none of these repeats every week, and the Actions log warns about it.
+
+Block timetables: an overall timetable that repeats every week for a whole block ("WEF 07 Sep 2026
+to 24 Jan 2027") is tied to that block by a date range: two dates in the file name
+(overall_2026-09-07_to_2027-01-24.csv), a date range in the PDF heading, or a Date value such
+as "2026-09-07 to 2027-01-24". Its rows then repeat weekly inside that range only.
+
+Week of the month: a Nth column ("1st, 2nd & 3rd") limits a weekly class to the 1st, 2nd, 3rd...
+occurrence of its weekday in the month. This is how college sheets write "Dermatology - 1st, 2nd &
+3rd day of the month" in a weekly slot. (Header: Nth, or "Week of month".)
+
+Classes on certain dates: a Date (or Dates) value such as "1st, 2nd and 3rd", "1-3 Oct" or
+"2026-10-01; 2026-10-02" makes a class show only on those days of the month or those exact dates.
+
+Dates: a weekly programme with dates ("Monday, 21 Sep 2026") can be given a Date column
+(YYYY-MM-DD), or a day cell / day heading that contains the date. Such rows apply only on
+that date, so last week's programme doesn't repeat next week. Rows without a date repeat weekly.
+
 Faculty codes: if the Faculty column holds short codes (AB, AKS) and the PDF lists
 the full names somewhere (usually at the end: "AB - Dr. Anil Bose"), the codes are
 replaced by the full names, using the key from the same file first, then faculty.csv,
 then keys found in your other files. A file called faculty.csv (columns: Code,Name)
 can add names that aren't listed in any timetable file.
 """
+import calendar
 import csv
 import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pdfplumber
 
@@ -69,6 +93,7 @@ KEYWORDS = [
     ("rolls", ["roll", "batch", "group", "division", "section"]),
     ("time", ["time", "slot", "timing", "period", "hour"]),
     ("day", ["day"]),
+    ("date", ["date"]),
     ("subject", ["subject", "course", "topic", "module", "paper"]),
     ("class", ["class", "type", "session", "category"]),
 ]
@@ -108,6 +133,8 @@ def clean(cell):
 
 
 def classify(cell):
+    if re.search(r"week\s*of\s*(the\s*)?month|wk\s*of\s*(the\s*)?month|^\s*nth\s*$|occurrence", cell, re.I):
+        return "nth"
     tokens = re.findall(r"[a-z]+", cell.lower())
     for field, words in KEYWORDS:
         if any(t.startswith(w) for t in tokens for w in words):
@@ -133,6 +160,7 @@ def norm_time(s):
     s = s.replace("–", "-").replace("—", "-")
     s = re.sub(r"\bto\b", "-", s, flags=re.I)
     s = re.sub(r"\s*\bhrs?\b\.?", "", s, flags=re.I)
+    s = re.sub(r"(?<=\d)\s*h\b\.?", "", s, flags=re.I)  # 1030h -> 1030
     s = re.sub(r"(\d{1,2})\.(\d{2})", r"\1:\2", s)
     s = re.sub(r"(?<![\d:.])([01]?\d|2[0-3])([0-5]\d)(?![\d:.])", r"\1:\2", s)  # 1030 -> 10:30
     return re.sub(r"\s*-\s*", " - ", s).strip()
@@ -150,7 +178,7 @@ DEFAULT_BATCH_RULES = [
     {"start_from": "10:00", "start_before": "14:00",
      "batches": {"A": "1-38", "B": "39-76", "C": "77-114", "D": "115+"}},
     {"start_from": "14:00", "start_before": "24:00",
-     "batches": {"A": "1-50", "B": "51-100", "C": "101-150"}},
+     "batches": {"A": "1-50", "B": "51-100", "C": "101-151"}},
 ]
 OPEN_END = 10 ** 6
 BATCH_TOKEN = re.compile(r"^(?:(?:batch|group|grp)\s*[-:]?\s*)?([A-Za-z])(?:\s*(?:batch|group))?$", re.I)
@@ -233,6 +261,8 @@ DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 
 def holiday_note(cell):
     """'Holiday' -> '', 'Holiday (Diwali)' -> 'Diwali', 'No classes' -> ''"""
+    if re.search(r"vacation", cell, re.I):
+        return cell.strip()
     if not re.search(r"holiday", cell, re.I):
         return ""
     cell = re.sub(DAY_WORD, "", cell, count=1, flags=re.I) if DAY_PREFIX.match(cell) else cell
@@ -359,7 +389,7 @@ def parse(path):
     is_csv = path.lower().endswith(".csv")
     rows = csv_rows(path) if is_csv else pdf_rows(path)
     entries, colmap, carry, legend = [], None, {}, {}
-    holidays, days_seen = [], set()
+    holidays, days_seen = [], set()  # days_seen holds (term, weekday, iso date or '')
     term = ""
     for raw in rows:
         if isinstance(raw, tuple):
@@ -385,22 +415,42 @@ def parse(path):
         # "Holiday" written under a day: the row has nothing but the day and the holiday text.
         hol = next((c for c in filled if len(c) <= 40 and HOLIDAY_RE.search(c)), None)
         others = [c for i, c in enumerate(row)
-                  if c and c is not hol and colmap.get(i) not in ("day", "term", "rolls")
+                  if c and c is not hol and colmap.get(i) not in ("day", "term", "rolls", "date", "nth")
                   and not DAY_ONLY.match(c) and not term_of_line(c)]
         if hol and not others:
+            term_idx = next((i for i, f in colmap.items() if f == "term"), None)
+            row_term = norm_term(row[term_idx]) if term_idx is not None and term_idx < len(row) else ""
+            date_idx = next((i for i, f in colmap.items() if f == "date"), None)
+            hdate, hspan = "", None
+            if date_idx is not None and date_idx < len(row):
+                hspec = parse_dates_spec(row[date_idx])
+                hdate = (hspec.get("on") or [""])[0]
+                hspan = hspec.get("range")
+            hdate = hdate or date_in_text(hol) or carry.get("date", "")
             day = ((norm_day(hol) if DAY_PREFIX.match(hol) else None)
                    or next((norm_day(c) for c in filled if DAY_ONLY.match(c)), None)
                    or (norm_day(row[day_idx]) if day_idx is not None and day_idx < len(row) and row[day_idx] else None)
                    or carry.get("day"))
+            if hspan:  # e.g. term-end vacation: every day in the range is a holiday
+                d0, d1 = date.fromisoformat(hspan[0]), date.fromisoformat(hspan[1])
+                for i in range((d1 - d0).days + 1):
+                    dd = d0 + timedelta(days=i)
+                    holidays.append({"term": row_term or term, "day": DAY_ORDER[dd.weekday()],
+                                     "note": holiday_note(hol), "date": dd.isoformat(), "explicit": True})
+                continue
+            if hdate:
+                day = DAY_ORDER[datetime.strptime(hdate, "%Y-%m-%d").weekday()]
             if day:
-                term_idx = next((i for i, f in colmap.items() if f == "term"), None)
-                row_term = norm_term(row[term_idx]) if term_idx is not None and term_idx < len(row) else ""
-                holidays.append({"term": row_term or term, "day": day, "note": holiday_note(hol)})
+                holidays.append({"term": row_term or term, "day": day, "note": holiday_note(hol),
+                                 "date": hdate, "explicit": True})
                 continue
 
-        if len(filled) == 1 and DAY_ONLY.match(filled[0]):
-            carry = {"day": norm_day(filled[0])}
-            days_seen.add((term, carry["day"]))  # a day with nothing under it turns out to be a holiday
+        heading = day_heading(filled[0]) if len(filled) == 1 else None
+        if heading:
+            carry = {"day": heading[0]}
+            if heading[1]:
+                carry["date"] = heading[1]
+            days_seen.add((term, heading[0], heading[1]))  # a day with nothing under it turns out to be a holiday
             continue
 
         # A row whose day cell isn't a weekday is not a class (e.g. a faculty list row).
@@ -412,9 +462,14 @@ def parse(path):
         for idx, field in colmap.items():
             val = row[idx] if idx < len(row) else ""
             if field == "day" and val:
+                day_date = date_in_text(val)
                 val = norm_day(val) or ""
                 if val and val != carry.get("day"):
                     carry = {"day": val}
+                if day_date:
+                    carry["date"] = day_date
+            elif field == "date":
+                pass  # kept as written; read by parse_dates_spec below
             elif field == "time" and val:
                 val = norm_time(val)
                 if val != carry.get("time"):
@@ -426,6 +481,7 @@ def parse(path):
                 val = norm_term(val)
             rec[field] = val
 
+        own_day = rec.get("day", "")
         for field in CARRY:
             if field in colmap.values():
                 if rec.get(field):
@@ -433,9 +489,20 @@ def parse(path):
                 else:
                     rec[field] = carry.get(field, "")
         rec["subject"] = rec.get("subject") or default_subject
+        raw_date = rec.get("date", "")
+        spec = parse_dates_spec(raw_date or carry.get("date", ""))
+        if raw_date and len(spec.get("on", [])) == 1:
+            carry["date"] = spec["on"][0]  # only a single full date is ever carried to blank cells below
+        on = spec.get("on", [])
+        if len(on) == 1:  # one exact date: the date decides the weekday
+            rec["day"] = DAY_ORDER[datetime.strptime(on[0], "%Y-%m-%d").weekday()]
+        elif not own_day and (spec.get("dom") or len(on) > 1 or spec.get("range")):
+            rec["day"] = "*"  # a class on certain dates, with no weekday given, runs on any weekday
+        elif not rec.get("day"):
+            rec["day"] = carry.get("day", "")
         if not rec.get("day"):
             continue
-        entries.append({
+        entry = {
             "term": rec.get("term") or term,
             "day": rec["day"],
             "time": rec.get("time", ""),
@@ -445,14 +512,55 @@ def parse(path):
             "rolls": rec.get("rolls") or "All",
             "batch": "",
             "location": rec.get("location", ""),
-        })
+        }
+        if on:
+            entry["from"], entry["to"] = on[0], on[-1]
+            if len(on) > 1:
+                entry["on"] = on
+        elif spec.get("range"):
+            entry["from"], entry["to"] = spec["range"]
+        nth = parse_nth(rec.get("nth", ""))
+        if nth:
+            entry["nth"] = nth
+        if spec.get("dom"):
+            entry["dom"] = spec["dom"]
+            if spec.get("mon"):
+                entry["mon"] = spec["mon"]
+        entries.append(entry)
 
     if not is_csv:
         legend_from_text(path, legend)
-    have_classes = {(e["term"], e["day"]) for e in entries}
-    for t, d in sorted(days_seen - have_classes):
-        holidays.append({"term": t, "day": d, "note": ""})
-    return entries, legend, holidays
+    first_text = ""
+    if not is_csv:
+        legend_from_text(path, legend)
+        with pdfplumber.open(path) as pdf:
+            first_text = (pdf.pages[0].extract_text() or "")[:3000] if pdf.pages else ""
+
+    # Which week is this file for?
+    week = None
+    dated = [e for e in entries if e.get("from")]
+    if dated:
+        lo, hi = min(e["from"] for e in dated), max(e["to"] for e in dated)
+        if (date.fromisoformat(hi) - date.fromisoformat(lo)).days <= 6:
+            week = week_of(lo)
+    week = week or week_from_text(first_text) or week_from_name(path)
+    if week:
+        for e in entries:
+            if not e.get("from"):
+                e["from"], e["to"] = week
+    # Days that were listed with nothing under them are holidays.
+    for t, d, dt in sorted(days_seen):
+        if dt:
+            busy = any(e["term"] == t and e.get("from") == dt for e in entries)
+        else:
+            busy = any(e["term"] == t and e["day"] == d for e in entries)
+        if not busy:
+            holidays.append({"term": t, "day": d, "note": "", "date": dt, "explicit": False})
+    if week:
+        for h in holidays:
+            if not h.get("date"):
+                h["date"] = (date.fromisoformat(week[0]) + timedelta(days=DAY_ORDER.index(h["day"]))).isoformat()
+    return entries, legend, holidays, week
 
 
 # ---------- main ----------
@@ -471,7 +579,7 @@ CLINIC_HEADERS = {
     "batch": ["batch", "group"],
     "posting": ["posting", "subject", "department", "dept", "clinic", "clinics", "unit"],
 }
-DATE_FORMATS = ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d %b %Y", "%d %B %Y", "%d-%b-%Y"]
+DATE_FORMATS = ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d %b %Y", "%d %B %Y", "%d-%b-%Y", "%d %m %Y"]
 
 
 def clinic_field(cell):
@@ -483,13 +591,156 @@ def clinic_field(cell):
 
 
 def parse_date(s):
-    s = clean(s)
+    s = re.sub(r"\bsept\b", "Sep", clean(s), flags=re.I)
     for fmt in DATE_FORMATS:
         try:
             return datetime.strptime(s, fmt).date().isoformat()
         except ValueError:
             pass
     return ""
+
+
+DATE_TEXT = re.compile(r"(?<!\d)(\d{1,2})[\s/.-]+([A-Za-z]{3,9}|\d{1,2})[\s/.,-]+(\d{4})(?!\d)")
+
+
+def date_in_text(s):
+    """'Monday, 21 Sep 2026' -> '2026-09-21' ('' if there is no date)"""
+    m = DATE_TEXT.search(s or "")
+    return parse_date(" ".join(m.groups())) if m else ""
+
+
+def parse_date_any(s):
+    return parse_date(s) or date_in_text(s)
+
+
+def day_heading(cell):
+    """A cell that is only a weekday, optionally with a date: ('Monday', '2026-09-21') or None."""
+    m = DAY_PREFIX.match(cell.strip())
+    if not m:
+        return None
+    rest = cell.strip()[m.end():]
+    iso = date_in_text(rest)
+    rest = DATE_TEXT.sub("", rest)
+    if re.sub(r"[\s.,:;()\-]+", "", rest):
+        return None
+    return norm_day(cell), iso
+
+
+MONTHS = {m.lower()[:3]: i for i, m in enumerate(calendar.month_name) if m}
+
+
+def monday_of(d):
+    return d - timedelta(days=d.weekday())
+
+
+def week_of(iso):
+    """'2026-09-23' -> ('2026-09-21', '2026-09-27'), the Monday to Sunday containing it."""
+    m = monday_of(date.fromisoformat(iso))
+    return m.isoformat(), (m + timedelta(days=6)).isoformat()
+
+
+def week_from_text(text):
+    """A heading such as '21 SEP 2026 - 27 SEP 2026' -> ('2026-09-21', '2026-09-27')."""
+    m = re.search(r"(\d{1,2})\s*([A-Za-z]{3,9})\.?,?\s*(\d{4})\s*(?:-|–|—|to)\s*(\d{1,2})\s*([A-Za-z]{3,9})\.?,?\s*(\d{2,4})(?!\d)",
+                  text or "", re.I)
+    if not m:
+        return None
+    y2 = m.group(6) if len(m.group(6)) == 4 else str(int(m.group(3)) // 100 * 100 + int(m.group(6)))
+    a = parse_date(f"{m.group(1)} {m.group(2)} {m.group(3)}")
+    b = parse_date(f"{m.group(4)} {m.group(5)} {y2}")
+    if a and b and a <= b and (date.fromisoformat(b) - date.fromisoformat(a)).days <= 400:
+        return a, b  # one week for a weekly programme, or a whole block for an overall timetable
+    return None
+
+
+def week_from_name(path):
+    """A date in the file name: surgery_2026-09-21.csv -> that week (Monday to Sunday)."""
+    name = os.path.splitext(os.path.basename(path))[0]
+    isos = re.findall(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)", name)
+    valid = [d for d in isos if parse_date(d)]
+    if len(valid) >= 2 and valid[0] <= valid[1]:
+        return valid[0], valid[1]  # a block: overall_2026-09-07_to_2027-01-24.csv
+    if valid:
+        return week_of(valid[0])
+    m = re.search(r"(?<!\d)(\d{1,2})[-_ ]+(\d{1,2})[-_ ]+([A-Za-z]{3,9})[-_ ]+(\d{4})(?!\d)", name)
+    if m:
+        a = parse_date(f"{m.group(1)} {m.group(3)} {m.group(4)}")
+        b = parse_date(f"{m.group(2)} {m.group(3)} {m.group(4)}")
+        if a and b and a <= b:
+            return a, b
+    return None
+
+
+def parse_nth(s):
+    """'1st, 2nd & 3rd' -> [1, 2, 3]; '4th & 5th' -> [4, 5]; '1-4' -> [1, 2, 3, 4] (week of the month)"""
+    s = clean(s).lower()
+    if not s or s in ("all", "every", "each"):
+        return []
+    nums = set()
+    rng = r"(\d)(?:st|nd|rd|th)?\s*(?:-|–|to)\s*(\d)(?:st|nd|rd|th)?"
+    for m in re.finditer(rng, s):
+        a, b = int(m.group(1)), int(m.group(2))
+        if 1 <= a <= b <= 5:
+            nums |= set(range(a, b + 1))
+    rest = re.sub(rng, " ", s)
+    nums |= {int(x) for x in re.findall(r"(?<!\d)([1-5])(?:st|nd|rd|th)?(?!\d)", rest)}
+    return sorted(nums)
+
+
+def parse_dates_spec(s):
+    """What dates does a Date / Dates value mean?
+    '2026-09-21'              -> {'on': ['2026-09-21']}
+    '1, 2 Oct 2026'-style     -> {'on': [...]} when the year is given
+    '1st, 2nd and 3rd'        -> {'dom': [1, 2, 3]}          (those days of the month)
+    '1-3 Oct'                 -> {'dom': [1, 2, 3], 'mon': [10]}
+    """
+    s = clean(s)
+    if not s:
+        return {}
+    # "2026-09-07 to 2027-01-24" (or two full dates written out): a stretch of time, not two exact days
+    span = re.search(r"(\d{4}-\d{2}-\d{2})\s*(?:to|until|till|-|–|—)\s*(\d{4}-\d{2}-\d{2})", s) or \
+        re.search(r"(\d{1,2}\s*[A-Za-z]{3,9}\.?,?\s*\d{4})\s*(?:to|until|till|-|–|—)\s*(\d{1,2}\s*[A-Za-z]{3,9}\.?,?\s*\d{4})", s)
+    if span:
+        a, b = parse_date(span.group(1)), parse_date(span.group(2))
+        if a and b and a <= b:
+            return {"range": [a, b]}
+    on = set(re.findall(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)", s))
+    rest = re.sub(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)", " ", s)
+    for m in re.finditer(r"(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})", rest):
+        a = parse_date(f"{m.group(1)} {m.group(3)} {m.group(4)}")
+        b = parse_date(f"{m.group(2)} {m.group(3)} {m.group(4)}")
+        if a and b and a <= b:
+            d0 = date.fromisoformat(a)
+            on |= {(d0 + timedelta(days=i)).isoformat() for i in range((date.fromisoformat(b) - d0).days + 1)}
+    rest = re.sub(r"(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})", " ", rest)
+    # "1, 2 and 3 Oct 2026" or "21 Sep 2026": several days sharing one month and year
+    listed = re.compile(r"((?:\d{1,2}(?:st|nd|rd|th)?[\s,&]*(?:and[\s,]*)?)+)([A-Za-z]{3,9})\.?,?\s+(\d{4})(?!\d)")
+    for m in listed.finditer(rest):
+        for n in re.findall(r"\d{1,2}", m.group(1)):
+            d = parse_date(f"{n} {m.group(2)} {m.group(3)}")
+            if d:
+                on.add(d)
+    rest = listed.sub(" ", rest)
+    for m in DATE_TEXT.finditer(rest):
+        d = parse_date(" ".join(m.groups()))
+        if d:
+            on.add(d)
+    if on:
+        return {"on": sorted(on)}
+    mons = sorted({MONTHS[w[:3].lower()] for w in re.findall(r"[A-Za-z]{3,9}", rest) if w[:3].lower() in MONTHS})
+    days = set()
+    for m in re.finditer(r"(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to)\s*(\d{1,2})(?:st|nd|rd|th)?", rest, re.I):
+        a, b = int(m.group(1)), int(m.group(2))
+        if 1 <= a <= b <= 31:
+            days |= set(range(a, b + 1))
+    rest2 = re.sub(r"(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to)\s*(\d{1,2})(?:st|nd|rd|th)?", " ", rest, flags=re.I)
+    days |= {int(x) for x in re.findall(r"(?<![\d/:.-])(\d{1,2})(?:st|nd|rd|th)?(?![\d/:.-])", rest2) if 1 <= int(x) <= 31}
+    if not days:
+        return {}
+    out = {"dom": sorted(days)}
+    if mons:
+        out["mon"] = mons
+    return out
 
 
 def parse_days(s):
@@ -532,45 +783,127 @@ def load_clinics(path):
     return rows, problems
 
 
+# Words that name a department, so a timetable clinic row for "Paed" or "Obst & Gynae" can be
+# matched to the same subject on the clinics sheet.
+DEPT_WORDS = {
+    "medicine": r"\bmedicine\b|\b(?:gen(?:eral)?|int(?:ernal)?)\.?\s*med\b",
+    "surgery": r"\bsurg\w*",
+    "obg": r"\bobg\b|\bobst\w*|\bgyn\w*|\bo\s*&\s*g\b",
+    "paed": r"\bpa?ediatric\w*|\bpaed\w*|\bpeds\b",
+    "ortho": r"\bortho\w*",
+    "ent": r"\bent\b|\botorhino\w*|\botolaryng\w*",
+    "ophthal": r"\bophthal\w*|\bopthal\w*",
+    "psy": r"\bpsy\w*",
+    "radio": r"\bradio\w*",
+    "derm": r"\bderm\w*|\bdvl\b",
+    "anaes": r"\banae?s\w*|\banesth\w*",
+}
+
+
+def dept_keys(text):
+    return {k for k, pat in DEPT_WORDS.items() if re.search(pat, text or "", re.I)}
+
+
+def applies_on(e, d):
+    """Does timetable entry e run on date d (a datetime.date)?"""
+    iso = d.isoformat()
+    if e.get("from") and iso < e["from"]:
+        return False
+    if e.get("to") and iso > e["to"]:
+        return False
+    if e.get("on") and iso not in e["on"]:
+        return False
+    if e.get("dom") and d.day not in e["dom"]:
+        return False
+    if e.get("mon") and d.month not in e["mon"]:
+        return False
+    if e.get("nth") and (d.day - 1) // 7 + 1 not in e["nth"]:
+        return False
+    return e["day"] in ("*", DAY_ORDER[d.weekday()])
+
+
+def apply_overrides(entries):
+    """A dated programme row replaces the recurring overall-timetable row for the same weekday, start
+    time and subject on that date, so the specific topic and faculty show instead of the generic slot."""
+    start = lambda e: (e["time"].split(" - ")[0] if e["time"] else "").strip()
+    same_subject = lambda a, b: re.sub(r"\W", "", a.lower()) == re.sub(r"\W", "", b.lower()) or \
+        bool(dept_keys(a) & dept_keys(b))
+    dated = [e for e in entries if e.get("from") and e.get("from") == e.get("to") and not e.get("rot")
+             and e["day"] != "*"]
+    for r in entries:
+        if r.get("rot") or (r.get("from") and r.get("from") == r.get("to")) or r["day"] == "*":
+            continue
+        for d in dated:
+            if d["day"] == r["day"] and start(d) == start(r) and same_subject(d["subject"], r["subject"]) \
+                    and applies_on(r, date.fromisoformat(d["from"])):
+                r.setdefault("skip", []).append(d["from"])
+    return entries
+
+
 def add_clinics(entries, rows, rules, term):
-    """Replace the timetable's own clinic rows with one entry per posting row and clinic slot.
-    The posting (subject) and roll numbers come from clinics.csv; day, time, class, location
-    and faculty come from the timetable's clinic row for that slot."""
+    """Replace the timetable's own clinic rows with one entry per posting per date.
+
+    The posting (subject) and roll numbers come from clinics.csv. Day, time, class, location and
+    faculty come from the timetable's clinic rows that apply on that date, but only from rows that
+    belong to the posting: rows that name the same department (in the Subject, Class, venue, or the
+    file name), plus rows that name no department at all. A row that names another department
+    (for example Paediatrics) is never used for Surgery. In a week where the posting has no clinic
+    programme yet, it still shows at the usual clinic slot with no venue or faculty."""
     is_clinic = lambda e: re.search(r"clinic", f"{e['class']} {e['subject']}", re.I)
-    info = {}
-    for e in entries:
-        if is_clinic(e):
-            d = info.setdefault((e["day"], e["time"]), {"class": [], "location": [], "faculty": []})
-            for f in d:
-                if e[f] and e[f] not in d[f]:
-                    d[f].append(e[f])
-    slots = sorted(info, key=lambda x: (DAY_ORDER.index(x[0]), x[1]))
+    clin = [dict(e) for e in entries if is_clinic(e)]
     entries = [e for e in entries if not is_clinic(e)]
+    for e in clin:  # subject/class first, then the venue ("Paed Ward"), then the file name
+        e["_k"] = (dept_keys(f"{e['subject']} {e['class']}") or dept_keys(e["location"])
+                   or dept_keys(os.path.splitext(e.get("_src", ""))[0]))
 
-    def details(day, time):
-        d = info.get((day, time)) or next((v for (dd, _), v in info.items() if dd == day), None) \
-            or next(iter(info.values()), None) or {"class": [], "location": [], "faculty": []}
-        return (d["class"][0] if d["class"] else "Clinics", " / ".join(d["location"]), ", ".join(d["faculty"]))
+    def merge(rows_, blank=False):
+        uniq = lambda f: [v for i, v in enumerate(x[f] for x in rows_) if v and v not in [y[f] for y in rows_[:i]]]
+        cls = uniq("class")
+        return (cls[0] if cls else "Clinics", "" if blank else " / ".join(uniq("location")),
+                "" if blank else ", ".join(uniq("faculty")))
 
-    out, problems = [], set()
+    clinic_time = norm_time(os.environ.get("TIMETABLE_CLINIC_TIME", "")) or DEFAULT_CLINIC_TIME
+    out, problems, unmatched = [], set(), set()
     for r in rows:
-        if r["days"] or r["time"]:
-            days = r["days"] or sorted({d for d, _ in slots}, key=DAY_ORDER.index) or DEFAULT_CLINIC_DAYS
-            times = [r["time"]] if r["time"] else (sorted({t for _, t in slots}) or [DEFAULT_CLINIC_TIME])
-            pairs = [(d, t) for d in days for t in times]
-        else:
-            pairs = slots or [(d, DEFAULT_CLINIC_TIME) for d in DEFAULT_CLINIC_DAYS]
-        for day, time in pairs:
-            rolls, batch = r["rolls"], r["batch"]
-            if not rolls and batch:
-                rolls, _, problem = map_batches(batch, time, rules)
-                if problem:
-                    problems.add(problem)
-            cls, location, faculty = details(day, time)
-            out.append({"term": term, "day": day, "time": time, "class": cls, "subject": r["posting"],
-                        "faculty": faculty, "rolls": rolls or "All", "batch": batch,
-                        "location": r["location"] or location, "from": r["from"], "to": r["to"]})
-    return entries + out, bool(slots), problems
+        pk = dept_keys(r["posting"])
+        belongs = lambda e: not e["_k"] or bool(pk & e["_k"])
+        named_here = any(pk & e["_k"] for e in clin)
+        if not named_here and any(e["_k"] for e in clin):
+            unmatched.add(r["posting"])
+        mine = [e for e in clin if belongs(e)]
+        others = [e for e in clin if e["_k"] and not (pk & e["_k"])]
+        end = date.fromisoformat(r["to"])
+        d = date.fromisoformat(r["from"])
+        while d <= end:
+            today = sorted((e for e in mine if applies_on(e, d)),  # rows naming this subject, then rows at the clinic time, first
+                           key=lambda e: (0 if (pk & e["_k"]) else 1, 0 if e["time"] == clinic_time else 1))
+            pairs = []  # (time, class, location, faculty): at most one clinic entry per posting per day
+            if r["days"] or r["time"]:
+                if not r["days"] or DAY_ORDER[d.weekday()] in r["days"]:
+                    pairs.append((r["time"] or clinic_time,) + (merge(today) if today else ("Clinics", "", "")))
+            elif today:
+                pairs.append((clinic_time,) + merge(today))
+            elif d.weekday() <= 5:
+                week = [monday_of(d) + timedelta(days=i) for i in range(7)]
+                if not clin or not any(applies_on(e, w) for w in week for e in mine):
+                    # No programme for this posting this week (or no clinic rows at all): show it at
+                    # the usual clinic time with no venue or faculty, never another department's people.
+                    pairs.append((clinic_time, "Clinics", "", ""))
+            for t, cls, location, faculty in pairs:
+                rolls, batch = r["rolls"], r["batch"]
+                if not rolls and batch:
+                    rolls, _, problem = map_batches(batch, t, rules)
+                    if problem:
+                        problems.add(problem)
+                out.append({"term": term, "day": DAY_ORDER[d.weekday()], "time": t, "class": cls,
+                            "subject": r["posting"], "faculty": faculty, "rolls": rolls or "All", "batch": batch,
+                            "location": r["location"] or location, "from": d.isoformat(), "to": d.isoformat(),
+                            "pfrom": r["from"], "pto": r["to"], "rot": 1})
+            d += timedelta(days=1)
+    if unmatched:
+        problems.add("no clinic row in the timetable names " + ", ".join(sorted(unmatched))
+                     + ", so those are shown without a venue or faculty")
+    return entries + out, bool(clin), problems
 
 
 # ---------- names.csv ----------
@@ -663,15 +996,16 @@ def main():
         print(f"{os.path.basename(lf)}: {len(global_legend)} faculty names")
 
     target = norm_term(os.environ.get("TIMETABLE_TERM", ""))
-    parsed = [(f, *parse(f)) for f in files]  # (file, entries, own faculty key, holidays)
+    parsed = [(f, *parse(f)) for f in files]  # (file, entries, own faculty key, holidays, week)
     # Faculty keys can sit in a different file from the classes that use them.
     pooled = {}
-    for _, _, lg, _ in parsed:
+    for _, _, lg, _, _ in parsed:
         for k, v in lg.items():
             pooled.setdefault(k, v)
 
     entries, seen, unresolved, batch_problems = [], set(), {}, {}
-    for f, found, own, _ in parsed:
+    hols_of = {f: hols for f, _, _, hols, _ in parsed}
+    for f, found, own, _, week in parsed:
         name = os.path.basename(f)
         missing = set()
         names = {**pooled, **global_legend, **own}
@@ -681,6 +1015,7 @@ def main():
             e["rolls"], e["batch"], problem = map_batches(e["rolls"], e["time"], rules)
             if problem:
                 batch_problems.setdefault(name, set()).add(problem)
+            e["_src"] = name
         if target and found:
             has_terms = any(e["term"] for e in found)
             kept = [e for e in found if not e["term"] or e["term"] == target]
@@ -694,12 +1029,20 @@ def main():
             if has_terms and not kept:
                 print(f"WARNING {name}: no section for term {target} in this file.")
         else:
+            hol_days = len([1 for x in hols_of.get(f, [])]) if not found else 0
             print(f"{name}: {len(found)} classes" if found else
+                  f"{name}: {hol_days} holiday day(s)" if hol_days else
                   f"{name}: NOTHING FOUND, skipped (a scanned image inside a PDF? make a .csv instead)")
+        if found and week:
+            print(f"{name}: shows only in the week {week[0]} to {week[1]}")
+        elif found and any(not e.get("from") for e in found):
+            print(f"WARNING {name}: has no dates, so it repeats every week. Add a Date column, or put the "
+                  f"week's start date in the file name (for example {os.path.splitext(name)[0]}_2026-09-21"
+                  f"{os.path.splitext(name)[1]}).")
         if missing:
             unresolved[name] = sorted(missing)
         for e in found:
-            key = tuple(e.values())
+            key = json.dumps(e, sort_keys=True)
             if key not in seen:
                 seen.add(key)
                 entries.append(e)
@@ -720,18 +1063,34 @@ def main():
                      f"(add Days / Time columns to clinics.csv to change)"))
             for pr in sorted(cproblems):
                 print(f"WARNING clinics.csv: {pr}")
-    # A day is a holiday when it's marked so (or left empty) and no class falls on it.
-    class_days = {e["day"] for e in entries}
+    entries = apply_overrides(entries)
+    # A day is a holiday when it's marked so (or listed with nothing under it) and no class falls on it.
+    # A holiday with a date applies to that date only; one without repeats every week on that weekday.
     marked = {}
-    for _, _, _, hols in parsed:
+    for _, _, _, hols, _ in parsed:
         for h in hols:
             if target and h["term"] not in ("", target):
                 continue
-            if h["day"] not in class_days and (h["day"] not in marked or (h["note"] and not marked[h["day"]])):
-                marked[h["day"]] = h["note"]
-    holidays = [{"day": d, "note": marked[d]} for d in DAY_ORDER if d in marked]
+            iso = h.get("date", "")
+            if iso:
+                dd = date.fromisoformat(iso)
+                if any(applies_on(e, dd) for e in entries if not e.get("rot")):
+                    continue
+            elif any(e["day"] == h["day"] and not e.get("from") for e in entries if not e.get("rot")):
+                continue
+            key = (iso, h["day"])
+            old = marked.get(key)
+            if old is None or (h["note"] and not old["note"]):
+                marked[key] = {"day": h["day"], "note": h["note"], "date": iso, "explicit": h.get("explicit", False)}
+    holidays = sorted(marked.values(), key=lambda h: (h["date"] or "0000", DAY_ORDER.index(h["day"])))
+    # An explicit holiday cancels the clinics rotation on that date too.
+    cancelled = {h["date"] for h in holidays if h["date"] and h["explicit"]}
+    if cancelled:
+        entries = [e for e in entries if not (e.get("rot") and e.get("from") in cancelled)]
     if holidays:
-        print("Holidays: " + ", ".join(h["day"] + (f" ({h['note']})" if h["note"] else "") for h in holidays))
+        print("Holidays: " + ", ".join((h["date"] + " " if h["date"] else "every ") + h["day"]
+                                        + (f" ({h['note']})" if h["note"] else "") for h in holidays))
+    holidays = [{k: v for k, v in h.items() if k != "explicit" and (v or k == "day")} for h in holidays]
     for name, problems in batch_problems.items():
         for pr in sorted(problems):
             print(f"WARNING {name}: {pr}. Those classes are shown to everyone until you add a rule "
@@ -743,6 +1102,8 @@ def main():
         sys.exit("No classes found in any PDF. Each needs a table with a header row like "
                  "Day | Time | Class | Roll No | Location, and must not be a scanned image. "
                  "See README.md for the manual fallback.")
+    for e in entries:
+        e.pop("_src", None)
     names = {}
     style = os.environ.get("TIMETABLE_NAMES", "full").strip().lower() or "full"
     if name_files and style not in ("off", "none", "no"):
@@ -762,7 +1123,7 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(dst)), exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    days = sorted({e["day"] for e in entries})
+    days = sorted({e["day"] for e in entries if e["day"] != "*"}, key=DAY_ORDER.index)
     print(f"Total: {len(entries)} classes across {len(days)} days: {', '.join(days)}")
 
 
