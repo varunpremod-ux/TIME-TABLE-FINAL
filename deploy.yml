@@ -1,0 +1,55 @@
+name: Build and deploy timetable
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  # Shown as the page heading. Change to your batch name.
+  TIMETABLE_TITLE: "Batch timetable"
+  # Only classes under this term's heading are kept (VII, 7 or 7th all work).
+  # Leave it as "" to keep every term in the files.
+  TIMETABLE_TERM: "VII"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build site from the PDF
+        run: |
+          pip install pdfplumber
+          mkdir -p _site
+          cp index.html _site/
+          if [ -f timetable.override.json ]; then
+            echo "Using timetable.override.json instead of the PDF"
+            cp timetable.override.json _site/timetable.json
+          else
+            python scripts/parse_timetable.py _site/timetable.json .
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
