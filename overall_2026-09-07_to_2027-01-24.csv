@@ -1,0 +1,62 @@
+Day,Time,Class,Subject,Faculty,Roll No,Location,Term,Nth
+Monday,08:00 - 08:45,Theory,Surgery,,All,NLH Sushruta,VII,
+Monday,08:45 - 09:30,Theory,Medicine,,All,NLH Sushruta,VII,
+Monday,09:30 - 10:15,SDL,Medicine,,All,NLH Sushruta,VII,
+Monday,14:00 - 15:00,Tutorial,Medicine,,C,,VII,
+Monday,14:00 - 15:00,Tutorial,Obstetrics & Gynaecology,,A,,VII,
+Monday,14:00 - 15:00,Tutorial,Surgery,,B,,VII,
+Monday,15:00 - 16:00,Tutorial,Medicine,,A,,VII,
+Monday,15:00 - 16:00,Tutorial,Obstetrics & Gynaecology,,B,,VII,
+Monday,15:00 - 16:00,Tutorial,Surgery,,C,,VII,
+Monday,16:00 - 17:00,Tutorial/SDL,Dermatology,,All,,VII,"1, 2, 3"
+Monday,16:00 - 17:00,Tutorial/SDL,Radiology,,All,,VII,"4, 5"
+Tuesday,08:00 - 08:45,Theory,Obstetrics & Gynaecology,,All,NLH Sushruta,VII,
+Tuesday,08:45 - 09:30,Theory,Surgery,,All,NLH Sushruta,VII,
+Tuesday,09:30 - 10:15,SDL,Surgery,,All,NLH Sushruta,VII,
+Tuesday,14:00 - 15:00,Tutorial,Medicine,,B,,VII,
+Tuesday,14:00 - 15:00,Tutorial,Obstetrics & Gynaecology,,C,,VII,
+Tuesday,14:00 - 15:00,Tutorial,Surgery,,A,,VII,
+Tuesday,15:00 - 16:00,Tutorial/SDL,Anaesthesia,,All,,VII,"3, 4, 5"
+Tuesday,15:00 - 16:00,Tutorial/SDL,Dermatology,,All,,VII,1
+Tuesday,15:00 - 16:00,Tutorial/SDL,Psychiatry,,All,,VII,2
+Tuesday,16:00 - 17:00,SDL,Dermatology,,All,,VII,"1, 2"
+Tuesday,16:00 - 17:00,SDL,Psychiatry,,All,,VII,3
+Tuesday,16:00 - 17:00,SDL,Radiology,,All,,VII,"4, 5"
+Wednesday,08:00 - 08:45,Theory,ENT,,All,NLH Sushruta,VII,
+Wednesday,08:45 - 09:30,Theory,Paediatrics,,All,NLH Sushruta,VII,
+Wednesday,09:30 - 10:15,SDL,Paediatrics,,All,NLH Sushruta,VII,
+Wednesday,14:00 - 15:00,Tutorial,Medicine,,A,,VII,
+Wednesday,14:00 - 15:00,Tutorial,Obstetrics & Gynaecology,,B,,VII,
+Wednesday,14:00 - 15:00,Tutorial,Surgery,,C,,VII,
+Wednesday,15:00 - 16:00,Tutorial,Medicine,,C,,VII,
+Wednesday,15:00 - 16:00,Tutorial,Obstetrics & Gynaecology,,A,,VII,
+Wednesday,15:00 - 16:00,Tutorial,Surgery,,B,,VII,
+Wednesday,16:00 - 17:00,Mentorship,Mentorship,,All,,VII,
+Thursday,08:00 - 08:45,Theory,Medicine,,All,NLH Sushruta,VII,
+Thursday,08:45 - 09:30,Theory,Obstetrics & Gynaecology,,All,NLH Sushruta,VII,
+Thursday,09:30 - 10:15,SDL,Obstetrics & Gynaecology,,All,NLH Sushruta,VII,
+Thursday,14:00 - 15:00,Tutorial,Paediatrics,,All,,VII,
+Thursday,15:00 - 16:00,Theory,Orthopaedics,,All,,VII,"1, 2, 4"
+Thursday,15:00 - 16:00,Tutorial,Orthopaedics,,All,,VII,"3, 5"
+Thursday,16:00 - 17:00,Tutorial,Ophthalmology,,All,,VII,"1, 2, 3, 4"
+Friday,08:00 - 08:45,Theory,Surgery,,All,NLH Sushruta,VII,
+Friday,08:45 - 09:30,Theory,Medicine,,All,NLH Sushruta,VII,
+Friday,09:30 - 10:15,SDL,Medicine,,All,NLH Sushruta,VII,
+Friday,14:00 - 15:00,Tutorial,Medicine,,B,,VII,
+Friday,14:00 - 15:00,Tutorial,Obstetrics & Gynaecology,,C,,VII,
+Friday,14:00 - 15:00,Tutorial,Surgery,,A,,VII,
+Friday,15:00 - 16:00,Tutorial,Medicine,,C,,VII,
+Friday,15:00 - 16:00,Tutorial,Obstetrics & Gynaecology,,A,,VII,
+Friday,15:00 - 16:00,Tutorial,Surgery,,B,,VII,
+Saturday,08:00 - 08:45,Theory,Dermatology,,All,NLH Sushruta,VII,"1, 2"
+Saturday,08:00 - 08:45,Theory,Psychiatry,,All,NLH Sushruta,VII,"3, 4"
+Saturday,08:00 - 08:45,Theory,Radiology,,All,NLH Sushruta,VII,5
+Saturday,08:45 - 09:30,Theory,Ophthalmology,,All,NLH Sushruta,VII,
+Saturday,09:30 - 10:15,SDL,Ophthalmology,,All,NLH Sushruta,VII,
+Saturday,14:00 - 15:00,Tutorial,Medicine,,A,,VII,
+Saturday,14:00 - 15:00,Tutorial,Obstetrics & Gynaecology,,B,,VII,
+Saturday,14:00 - 15:00,Tutorial,Surgery,,C,,VII,
+Saturday,15:00 - 16:00,Tutorial,Medicine,,B,,VII,
+Saturday,15:00 - 16:00,Tutorial,Obstetrics & Gynaecology,,C,,VII,
+Saturday,15:00 - 16:00,Tutorial,Surgery,,A,,VII,
+Saturday,16:00 - 17:00,Mentorship,Mentorship,,All,,VII,
