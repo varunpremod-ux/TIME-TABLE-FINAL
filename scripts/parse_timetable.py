@@ -819,24 +819,53 @@ def applies_on(e, d):
         return False
     if e.get("nth") and (d.day - 1) // 7 + 1 not in e["nth"]:
         return False
+    if e.get("skip") and iso in e["skip"]:
+        return False
     return e["day"] in ("*", DAY_ORDER[d.weekday()])
 
 
+def time_bounds(t):
+    """'08:00 - 08:45' -> (480, 525); None when the time can't be read."""
+    parts = [p.strip() for p in (t or "").split(" - ")]
+    s = start_minutes(parts[0]) if parts and parts[0] else None
+    if s is None:
+        return None
+    e = start_minutes(parts[1]) if len(parts) > 1 and parts[1] else None
+    if e is None or e <= s:
+        e = s + 60
+    return s, e
+
+
 def apply_overrides(entries):
-    """A dated programme row replaces the recurring overall-timetable row for the same weekday, start
-    time and subject on that date, so the specific topic and faculty show instead of the generic slot."""
-    start = lambda e: (e["time"].split(" - ")[0] if e["time"] else "").strip()
+    """The overall block timetable only holds generic slots ("Theory - Surgery"). Wherever another
+    row (a department's programme for a day or a week, or an undated department file) covers the
+    same weekday, subject and overlapping time, the generic slot is hidden on those dates, so the
+    lecture is listed once, with the topic and faculty."""
+    FOREVER = 10 ** 6
+    span = lambda e: ((date.fromisoformat(e["to"]) - date.fromisoformat(e["from"])).days + 1
+                      if e.get("from") and e.get("to") else FOREVER)
     same_subject = lambda a, b: re.sub(r"\W", "", a.lower()) == re.sub(r"\W", "", b.lower()) or \
         bool(dept_keys(a) & dept_keys(b))
-    dated = [e for e in entries if e.get("from") and e.get("from") == e.get("to") and not e.get("rot")
-             and e["day"] != "*"]
-    for r in entries:
-        if r.get("rot") or (r.get("from") and r.get("from") == r.get("to")) or r["day"] == "*":
-            continue
-        for d in dated:
-            if d["day"] == r["day"] and start(d) == start(r) and same_subject(d["subject"], r["subject"]) \
-                    and applies_on(r, date.fromisoformat(d["from"])):
-                r.setdefault("skip", []).append(d["from"])
+    live = [e for e in entries if not e.get("rot") and e["day"] != "*"]
+    templates = [e for e in live if 7 < span(e) < FOREVER]  # rows from a multi-week block timetable
+    others = [e for e in live if span(e) <= 7 or span(e) == FOREVER]
+    for r in templates:
+        rb = time_bounds(r["time"])
+        for o in others:
+            if o["day"] != r["day"] or not same_subject(o["subject"], r["subject"]):
+                continue
+            if o["rolls"] not in ("All", "") and o["rolls"] != r["rolls"]:
+                continue  # a row for some batches only doesn't replace the slot for the others
+            ob = time_bounds(o["time"])
+            if not rb or not ob or not (ob[0] < rb[1] and rb[0] < ob[1]):
+                continue
+            lo = max(date.fromisoformat(r["from"]), date.fromisoformat(o["from"]) if o.get("from") else date.min)
+            hi = min(date.fromisoformat(r["to"]), date.fromisoformat(o["to"]) if o.get("to") else date.max)
+            d = lo
+            while d <= hi:
+                if d.weekday() == DAY_ORDER.index(r["day"]) and applies_on(o, d) and applies_on(r, d):
+                    r.setdefault("skip", []).append(d.isoformat())
+                d += timedelta(days=1)
     return entries
 
 
