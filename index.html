@@ -46,10 +46,8 @@ h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em}
 .days button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .days button small{font:500 12px Figtree,system-ui,sans-serif;opacity:.8}
 .days button.today::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--signal)}
-.weekbar{display:flex;align-items:stretch;gap:8px;margin-top:14px}
-.weekbar button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 16px;font:600 20px/1 Figtree,system-ui,sans-serif;cursor:pointer}
-.weekbar #weekLabel{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:15px;line-height:1.2}
-.weekbar #weekLabel small{font:500 12px Figtree,system-ui,sans-serif;color:var(--muted)}
+.weeknote{margin:16px 2px 0;font-size:15px;color:var(--muted)}
+.weeknote b{color:var(--ink);font-weight:600}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .head{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 0}
@@ -116,11 +114,7 @@ footer a{color:var(--accent)}
       <button type="button" data-view="mine" aria-pressed="true">My classes</button>
       <button type="button" data-view="all" aria-pressed="false">Roll-wise</button>
     </div>
-    <div class="weekbar">
-      <button type="button" id="prevWeek" aria-label="Previous week">‹</button>
-      <button type="button" id="weekLabel" aria-label="Go to this week"></button>
-      <button type="button" id="nextWeek" aria-label="Next week">›</button>
-    </div>
+    <p class="weeknote" id="weekLabel"></p>
     <nav class="days" id="days" aria-label="Day"></nav>
     <button type="button" class="calbtn" id="calBtn">Add this week to my calendar</button>
     <p class="calmsg" id="calMsg" role="status"></p>
@@ -218,10 +212,10 @@ footer a{color:var(--accent)}
   }
 
   const todayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  /* Mon to Sat always, plus Sunday when it appears in the timetable, is marked, or is today */
+  /* Mon to Sat always, plus Sunday when it appears in the timetable, is marked, or is today (inside the shown week) */
   function visibleDays(){
-    const t = todayName();
-    return DAYS.filter((d, i) => i < 6 || d === t || state.holidays.some(h => h.day === d) || state.entries.some(e => e.day === d));
+    const todayISO = iso(new Date());
+    return DAYS.filter((d, i) => i < 6 || iso(dateOf(d)) === todayISO || state.holidays.some(h => h.day === d) || state.entries.some(e => e.day === d));
   }
   function holidayView(day, isToday, isPast){
     const h = holidayFor(day, dateOf(day));
@@ -354,8 +348,7 @@ footer a{color:var(--accent)}
   function renderWeek(){
     $('#calMsg').textContent = '';
     const start = state.weekStart, end = addDays(start, 6);
-    const isThis = iso(start) === iso(mondayOf(new Date()));
-    $('#weekLabel').innerHTML = `<b>${fmtDate(start)} – ${fmtDate(end)}</b><small>${isThis ? 'This week' : 'Tap to go to this week'}</small>`;
+    $('#weekLabel').innerHTML = `Timetable for <b>${fmtDate(start)} – ${fmtDate(end)}</b>`;
     renderDays(); renderOut();
   }
 
@@ -370,8 +363,11 @@ footer a{color:var(--accent)}
     }
     state.holidays = (d.holidays || []).filter(h => h && h.day);
     if (!state.entries.length && !state.holidays.length){ $('#out').innerHTML = '<p class="empty">The timetable has no classes yet.</p>'; return; }
-    state.day = todayName();
-    state.weekStart = mondayOf(new Date());
+    /* One week only: the week the timetable was published for. It changes only when a newer week is uploaded. */
+    const w = d.week && d.week.from ? d.week.from.split('-').map(Number) : null;
+    state.weekStart = w ? new Date(w[0], w[1] - 1, w[2]) : mondayOf(new Date());
+    const todayISO = iso(new Date());
+    state.day = todayISO >= iso(state.weekStart) && todayISO <= iso(addDays(state.weekStart, 6)) ? todayName() : 'Monday';
     $('#controls').hidden = false;
     if (state.pdf){ $('#foot').hidden = false; $('#foot').innerHTML = `<a href="${esc(state.pdf)}">Open the original PDF</a>`; }
     renderWelcome(); renderWeek();
@@ -387,10 +383,6 @@ footer a{color:var(--accent)}
     renderOut();
   });
   $('#calBtn').addEventListener('click', addToCalendar);
-  const shiftWeek = n => { state.weekStart = addDays(state.weekStart, n * 7); renderWeek(); };
-  $('#prevWeek').addEventListener('click', () => shiftWeek(-1));
-  $('#nextWeek').addEventListener('click', () => shiftWeek(1));
-  $('#weekLabel').addEventListener('click', () => { state.weekStart = mondayOf(new Date()); state.day = todayName(); renderWeek(); });
   $('#days').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     state.day = b.dataset.day; renderDays(); renderOut();
