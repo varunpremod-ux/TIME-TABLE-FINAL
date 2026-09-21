@@ -26,7 +26,8 @@ shows the name as written, first shows the first name only, off leaves names out
 Clinics: a file called clinics.csv (Batch, Rolls, From, To, Posting) says only WHICH posting
 (subject) each batch of roll numbers has, and between which dates. Everything else (days,
 class name, location, faculty) is taken from the timetable's own clinic rows, the rows
-whose Class or Subject says "clinic". Clinics are shown ONCE a day, always at 10:30 - 13:00 (set TIMETABLE_CLINIC_TIME to
+whose Class or Subject says "clinic", plus any department row inside the clinic hours (an internal
+assessment, say), which belongs to the batch posted to that department. Clinics are shown ONCE a day, always at 10:30 - 13:00 (set TIMETABLE_CLINIC_TIME to
 change it), with the details of all the timetable rows that apply merged into that one entry.
 Each posting is placed on the days those rows apply. Optional Days,
 Time and Location columns in clinics.csv override the timetable. Entries carry from/to
@@ -39,6 +40,12 @@ changed without touching code by adding a batches.json file (see README).
 
 Holidays: a day marked "Holiday" (or "No classes") in the timetable, or a day that is
 listed with nothing written under it, is saved as a holiday and shown as one on the site.
+
+One week at a time: the site shows ONE week only, the newest week that has a weekly timetable
+uploaded (the file rows' dates, a heading date range, or a date in the file name). Nothing else can
+be browsed. When next week's timetable is uploaded, the site switches to that week and last
+week disappears. TIMETABLE_WEEK=2026-09-21 in deploy.yml can force a particular week.
+The overall block timetable, the clinics rotation and holidays are shown inside that week.
 
 Weeks: every timetable file is treated as belonging to ONE week. The week comes from the dates
 in the file's rows, or from a date range in a PDF's heading ("21 SEP 2026 - 27 SEP 2026"), or from
@@ -878,7 +885,21 @@ def add_clinics(entries, rows, rules, term):
     file name), plus rows that name no department at all. A row that names another department
     (for example Paediatrics) is never used for Surgery. In a week where the posting has no clinic
     programme yet, it still shows at the usual clinic slot with no venue or faculty."""
-    is_clinic = lambda e: re.search(r"clinic", f"{e['class']} {e['subject']}", re.I)
+    clinic_time = norm_time(os.environ.get("TIMETABLE_CLINIC_TIME", "")) or DEFAULT_CLINIC_TIME
+    cb = time_bounds(clinic_time)
+
+    def in_clinic_slot(e):  # the row sits inside the clinic hours (a little slack either side)
+        tb = time_bounds(e["time"])
+        return bool(tb and cb and tb[0] >= cb[0] - 30 and tb[1] <= cb[1] + 30 and tb[1] > cb[0] and tb[0] < cb[1])
+
+    def names_department(e):
+        return bool(dept_keys(f"{e['subject']} {e['class']}") or dept_keys(e["location"])
+                    or dept_keys(os.path.splitext(e.get("_src", ""))[0]))
+
+    # A clinic row, or any department row in the clinic hours (for example an internal assessment):
+    # the students are in that department's clinics then, so it belongs to the batch posted there.
+    is_clinic = lambda e: re.search(r"clinic", f"{e['class']} {e['subject']}", re.I) or (
+        in_clinic_slot(e) and names_department(e))
     clin = [dict(e) for e in entries if is_clinic(e)]
     entries = [e for e in entries if not is_clinic(e)]
     for e in clin:  # subject/class first, then the venue ("Paed Ward"), then the file name
@@ -891,7 +912,6 @@ def add_clinics(entries, rows, rules, term):
         return (cls[0] if cls else "Clinics", "" if blank else " / ".join(uniq("location")),
                 "" if blank else ", ".join(uniq("faculty")))
 
-    clinic_time = norm_time(os.environ.get("TIMETABLE_CLINIC_TIME", "")) or DEFAULT_CLINIC_TIME
     out, problems, unmatched = [], set(), set()
     for r in rows:
         pk = dept_keys(r["posting"])
@@ -1033,6 +1053,7 @@ def main():
             pooled.setdefault(k, v)
 
     entries, seen, unresolved, batch_problems = [], set(), {}, {}
+    weekly_files = []  # (monday, file name) for every file that is tied to a single week
     hols_of = {f: hols for f, _, _, hols, _ in parsed}
     for f, found, own, _, week in parsed:
         name = os.path.basename(f)
@@ -1064,6 +1085,8 @@ def main():
                   f"{name}: NOTHING FOUND, skipped (a scanned image inside a PDF? make a .csv instead)")
         if found and week:
             print(f"{name}: shows only in the week {week[0]} to {week[1]}")
+            if (date.fromisoformat(week[1]) - date.fromisoformat(week[0])).days <= 6:
+                weekly_files.append((monday_of(date.fromisoformat(week[0])), name))
         elif found and any(not e.get("from") for e in found):
             print(f"WARNING {name}: has no dates, so it repeats every week. Add a Date column, or put the "
                   f"week's start date in the file name (for example {os.path.splitext(name)[0]}_2026-09-21"
@@ -1133,6 +1156,27 @@ def main():
                  "See README.md for the manual fallback.")
     for e in entries:
         e.pop("_src", None)
+
+    # The site shows one week only: the newest week that has a weekly timetable (or TIMETABLE_WEEK).
+    forced = parse_date(os.environ.get("TIMETABLE_WEEK", ""))
+    if forced:
+        wk_start, why = monday_of(date.fromisoformat(forced)), "set by TIMETABLE_WEEK"
+    elif weekly_files:
+        wk_start = max(w for w, _ in weekly_files)
+        why = "the newest weekly timetable: " + ", ".join(sorted(n for w, n in weekly_files if w == wk_start))
+    else:
+        wk_start, why = monday_of(date.today()), "no weekly timetable found, so this week"
+    wk_days = [wk_start + timedelta(days=i) for i in range(7)]
+    wk_end = wk_days[-1]
+    older = sorted(n for w, n in weekly_files if w < wk_start)
+    before = len(entries)
+    entries = [e for e in entries if any(applies_on(e, d) for d in wk_days)]
+    holidays = [h for h in holidays if not h.get("date") or wk_start.isoformat() <= h["date"] <= wk_end.isoformat()]
+    print(f"Showing the week {wk_start.isoformat()} to {wk_end.isoformat()} ({why})")
+    if older:
+        print("Older weeks are not shown (their files can stay in the repo): " + ", ".join(older))
+    if not any(not e.get("rot") for e in entries):
+        print("WARNING: no class in the timetable falls in that week, only the clinics rotation.")
     names = {}
     style = os.environ.get("TIMETABLE_NAMES", "full").strip().lower() or "full"
     if name_files and style not in ("off", "none", "no"):
@@ -1145,6 +1189,7 @@ def main():
         "title": os.environ.get("TIMETABLE_TITLE", "Class timetable"),
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "term": target,
+        "week": {"from": wk_start.isoformat(), "to": wk_end.isoformat()},
         "holidays": holidays,
         "names": names,
         "entries": entries,
@@ -1153,7 +1198,7 @@ def main():
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     days = sorted({e["day"] for e in entries if e["day"] != "*"}, key=DAY_ORDER.index)
-    print(f"Total: {len(entries)} classes across {len(days)} days: {', '.join(days)}")
+    print(f"Total: {len(entries)} classes in that week (of {before} found) across {len(days)} days: {', '.join(days)}")
 
 
 if __name__ == "__main__":
