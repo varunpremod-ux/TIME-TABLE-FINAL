@@ -35,15 +35,21 @@ h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em}
 .roll input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);outline:none;text-align:right;font:800 30px/1.2 var(--display);letter-spacing:-.01em}
 .roll input::placeholder{color:var(--line)}
 
+.welcome{margin:-6px 4px 14px;font:800 20px/1.2 var(--display);letter-spacing:-.01em;color:var(--accent)}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--line);border-radius:12px}
 .seg button{border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
 
 .days{display:flex;gap:8px;overflow-x:auto;margin:14px -16px 0;padding:2px 16px 8px;scrollbar-width:none}
 .days::-webkit-scrollbar{display:none}
-.days button{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:var(--surface);color:var(--ink);font:600 14px Figtree,system-ui,sans-serif;cursor:pointer}
+.days button{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.15;flex:0 0 auto;border:1px solid var(--line);border-radius:14px;padding:7px 14px;background:var(--surface);color:var(--ink);font:600 14px Figtree,system-ui,sans-serif;cursor:pointer}
 .days button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.days button.today::after{content:"";display:inline-block;width:6px;height:6px;margin-left:7px;border-radius:50%;background:var(--signal);vertical-align:middle}
+.days button small{font:500 12px Figtree,system-ui,sans-serif;opacity:.8}
+.days button.today::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--signal)}
+.weekbar{display:flex;align-items:stretch;gap:8px;margin-top:14px}
+.weekbar button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 16px;font:600 20px/1 Figtree,system-ui,sans-serif;cursor:pointer}
+.weekbar #weekLabel{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:15px;line-height:1.2}
+.weekbar #weekLabel small{font:500 12px Figtree,system-ui,sans-serif;color:var(--muted)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .head{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 0}
@@ -67,7 +73,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .slot{margin-top:20px}
 .slot h3{font-size:16px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .slot ul{list-style:none;margin:8px 0 0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.slot li{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;padding:12px 14px}
+.slot li{display:grid;grid-template-columns:92px 1fr minmax(0,38%);gap:12px;align-items:center;padding:12px 14px}
 .slot li+li{border-top:1px solid var(--line)}
 .slot li.mine{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
 .rolls{font:800 17px/1.2 var(--display);font-variant-numeric:tabular-nums}
@@ -97,11 +103,17 @@ footer a{color:var(--accent)}
     <label for="roll">Your roll no.</label>
     <input id="roll" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="27">
   </div>
+  <p class="welcome" id="welcome" hidden></p>
 
   <div id="controls" hidden>
     <div class="seg" role="group" aria-label="View">
       <button type="button" data-view="mine" aria-pressed="true">My classes</button>
       <button type="button" data-view="all" aria-pressed="false">Roll-wise</button>
+    </div>
+    <div class="weekbar">
+      <button type="button" id="prevWeek" aria-label="Previous week">‹</button>
+      <button type="button" id="weekLabel" aria-label="Go to this week"></button>
+      <button type="button" id="nextWeek" aria-label="Next week">›</button>
     </div>
     <nav class="days" id="days" aria-label="Day"></nav>
   </div>
@@ -119,9 +131,22 @@ footer a{color:var(--accent)}
     get(k){ try { return localStorage.getItem(k); } catch { return null; } },
     set(k,v){ try { localStorage.setItem(k,v); } catch {} }
   };
-  const state = { entries: [], holidays: new Map(), roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
+  const state = { names: {}, weekStart: null, entries: [], holidays: new Map(), roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
   const PERSON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="5.2" r="2.6"/><path d="M2.8 14c.4-3 2.4-4.4 5.2-4.4s4.8 1.4 5.2 4.4"/></svg>';
   const PIN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s5-4.2 5-8a5 5 0 1 0-10 0c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.7"/></svg>';
+
+  /* ---- dates: the timetable repeats weekly; some entries (clinics) only run between two dates ---- */
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
+  const dateOf = day => addDays(state.weekStart, DAYS.indexOf(day));
+  const fmtDate = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const fmtISO = s => { const [y, m, dd] = s.split('-').map(Number); return fmtDate(new Date(y, m - 1, dd)); };
+  const entriesOn = day => {
+    const k = iso(dateOf(day));
+    return state.entries.filter(e => e.day === day && (!e.from || k >= e.from) && (!e.to || k <= e.to)).sort(byTime);
+  };
 
   /* Does a roll spec from the PDF ("1-25", "All", "1-20, 41, 45") include this roll? */
   function rollMatches(spec, roll){
@@ -131,9 +156,11 @@ footer a{color:var(--accent)}
     const n = parseInt((String(roll).match(/(\d+)\D*$/) || [])[1], 10);
     if (Number.isNaN(n)) return false;
     const range = /(\d+)\s*(?:-|–|—|to)\s*(\d+)/gi;
+    const open = /(\d+)\s*(?:\+|onwards?|and\s+above)/gi;
     let m;
     while ((m = range.exec(spec))) if (n >= +m[1] && n <= +m[2]) return true;
-    const rest = spec.replace(/(\d+)\s*(?:-|–|—|to)\s*(\d+)/gi, ' ')
+    while ((m = open.exec(spec))) if (n >= +m[1]) return true;
+    const rest = spec.replace(/(\d+)\s*(?:-|–|—|to)\s*(\d+)/gi, ' ').replace(/(\d+)\s*(?:\+|onwards?|and\s+above)/gi, ' ')
                      .replace(/\b(roll|rolls|no|nos|number|numbers)\b\.?/gi, ' ');
     if (!/[a-z]/i.test(rest)) return (rest.match(/\d+/g) || []).some(x => +x === n);
     return false;
@@ -158,13 +185,13 @@ footer a{color:var(--accent)}
   }
   const byTime = (a, b) => (a._s ?? 1e9) - (b._s ?? 1e9);
   const kindOf = c => /lect|theor/i.test(c) ? 'lecture' : /prac|lab|clinic|dissect|skill/i.test(c) ? 'practical' : '';
-  const fmtRolls = s => String(s || 'All').replace(/\s*-\s*/g, '–');
+  const fmtRolls = s => String(s || 'All').replace(/\s*-\s*/g, '–').replace(/(\d+)\s*\+/g, '$1+');
   const hasNums = r => /\d/.test(String(r || ''));
   /* "Batch B, Roll 51–100"; a batch name we couldn't convert shows as "Batch A" */
   function rollLabel(e){
     const r = String(e.rolls || 'All').trim();
     if (!hasNums(r) && !/^all/i.test(r)) return /^(batch|group)/i.test(r) ? r : 'Batch ' + r;
-    return (e.batch ? 'Batch ' + e.batch + ', ' : '') + 'Roll ' + fmtRolls(r);
+    return (e.batch ? 'Batch ' + e.batch + ', ' : '') + 'Roll ' + fmtRolls(r).replace(/(\d+)\+/g, '$1 onwards');
   }
 
   const todayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -175,15 +202,15 @@ footer a{color:var(--accent)}
   }
   function holidayView(day, isToday){
     const note = state.holidays.get(day);
-    return `<div class="head"><h2>${day}</h2></div>
+    return `<div class="head"><h2>${day}</h2><p>${fmtDate(dateOf(day))}</p></div>
       <div class="holiday"><h3>Holiday</h3><p>${esc(note || (isToday ? 'No classes today.' : 'No classes on ' + day + '.'))}</p></div>`;
   }
 
   function renderDays(){
     const days = visibleDays();
-    const today = todayName();
+    const todayISO = iso(new Date());
     $('#days').innerHTML = days.map(d =>
-      `<button type="button" data-day="${d}" aria-pressed="${d === state.day}" class="${[d === today ? 'today' : '', state.entries.some(e => e.day === d) ? '' : 'off'].join(' ').trim()}">${d.slice(0,3)}</button>`
+      `<button type="button" data-day="${d}" aria-pressed="${d === state.day}" class="${[iso(dateOf(d)) === todayISO ? 'today' : '', entriesOn(d).length ? '' : 'off'].join(' ').trim()}"><span>${d.slice(0,3)}</span><small>${dateOf(d).getDate()}</small></button>`
     ).join('');
     $('#days [aria-pressed=true]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
@@ -191,9 +218,10 @@ footer a{color:var(--accent)}
   function renderOut(){
     const out = $('#out');
     const day = state.day;
-    const dayEntries = state.entries.filter(e => e.day === day).sort(byTime);
+    const dayEntries = entriesOn(day);
     const now = new Date();
-    const isToday = day === now.toLocaleDateString('en-US', { weekday: 'long' });
+    const date = dateOf(day);
+    const isToday = iso(date) === iso(now);
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
     if (!dayEntries.length){ out.innerHTML = holidayView(day, isToday); return; }
@@ -201,7 +229,7 @@ footer a{color:var(--accent)}
     if (state.view === 'mine'){
       if (!state.roll){ out.innerHTML = '<p class="empty">Type your roll no. above to see your classes.</p>'; return; }
       const mine = dayEntries.filter(e => rollMatches(e.rolls, state.roll));
-      const head = `<div class="head"><h2>${day}</h2><p>${mine.length} ${mine.length === 1 ? 'class' : 'classes'}</p></div>`;
+      const head = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, ${mine.length} ${mine.length === 1 ? 'class' : 'classes'}</p></div>`;
       if (!mine.length){ out.innerHTML = head + `<p class="empty">Nothing on ${day} for roll ${esc(state.roll)}.</p>`; return; }
       const nowIdx = isToday ? mine.findIndex(e => e._s != null && e._e != null && nowMin >= e._s && nowMin < e._e) : -1;
       const nextIdx = isToday && nowIdx < 0 ? mine.findIndex(e => e._s != null && e._s > nowMin) : -1;
@@ -217,6 +245,7 @@ footer a{color:var(--accent)}
               ${e.faculty ? `<span>${PERSON}${esc(e.faculty)}</span>` : ''}
               ${e.location ? `<span>${PIN}${esc(e.location)}</span>` : ''}
               <span>${esc(rollLabel(e))}</span>
+              ${e.from && e.to ? `<span>${esc(fmtISO(e.from))} to ${esc(fmtISO(e.to))}</span>` : ''}
             </p>
           </div>
         </article>`;
@@ -225,7 +254,7 @@ footer a{color:var(--accent)}
     }
 
     /* Roll-wise: everyone's split for the day, grouped by time slot, your row highlighted */
-    const head = `<div class="head"><h2>${day}</h2><p>Who goes where</p></div>`;
+    const head = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, who goes where</p></div>`;
     const slots = new Map();
     dayEntries.forEach(e => { const k = e.time; (slots.get(k) || slots.set(k, []).get(k)).push(e); });
     out.innerHTML = head + [...slots].map(([time, list]) => {
@@ -233,15 +262,31 @@ footer a{color:var(--accent)}
       return `<div class="slot"><h3>${esc(p.join(' – '))}</h3><ul>` + list.map(e =>
         `<li class="${state.roll && rollMatches(e.rolls, state.roll) ? 'mine' : ''}">
           <span class="rolls">${esc(hasNums(e.rolls) || /^all/i.test(e.rolls || 'All') ? fmtRolls(e.rolls) : rollLabel(e))}${e.batch ? `<small>Batch ${esc(e.batch)}</small>` : ''}</span>
-          <span class="what"><b>${esc(e.subject)}</b>${e.class ? `<small>${esc(e.class)}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}</span>
+          <span class="what"><b>${esc(e.subject)}</b>${e.class ? `<small>${esc(e.class)}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}${e.from && e.to ? `<small>${esc(fmtISO(e.from))} to ${esc(fmtISO(e.to))}</small>` : ''}</span>
           <span class="loc">${esc(e.location)}</span>
         </li>`).join('') + '</ul></div>';
     }).join('');
   }
 
+  function renderWelcome(){
+    const el = $('#welcome');
+    const n = parseInt((String(state.roll).match(/(\d+)\D*$/) || [])[1], 10);
+    const name = Number.isNaN(n) ? '' : (state.names[String(n)] || '');
+    el.hidden = !name;
+    el.textContent = name ? 'Welcome, ' + name : '';
+  }
+
+  function renderWeek(){
+    const start = state.weekStart, end = addDays(start, 6);
+    const isThis = iso(start) === iso(mondayOf(new Date()));
+    $('#weekLabel').innerHTML = `<b>${fmtDate(start)} – ${fmtDate(end)}</b><small>${isThis ? 'This week' : 'Tap to go to this week'}</small>`;
+    renderDays(); renderOut();
+  }
+
   function init(d){
     state.entries = (d.entries || []).map(e => { const sp = span(e.time); return { ...e, _s: sp.s, _e: sp.e, parts: sp.parts }; });
     state.pdf = d.pdf || null;
+    state.names = d.names || {};
     if (d.title){ $('#title').textContent = d.title; document.title = d.title; }
     if (d.updated){
       const dt = new Date(d.updated);
@@ -250,20 +295,25 @@ footer a{color:var(--accent)}
     (d.holidays || []).forEach(h => { if (h && h.day) state.holidays.set(h.day, h.note || ''); });
     if (!state.entries.length && !state.holidays.size){ $('#out').innerHTML = '<p class="empty">The timetable has no classes yet.</p>'; return; }
     state.day = todayName();
+    state.weekStart = mondayOf(new Date());
     $('#controls').hidden = false;
     if (state.pdf){ $('#foot').hidden = false; $('#foot').innerHTML = `<a href="${esc(state.pdf)}">Open the original PDF</a>`; }
-    renderDays(); renderOut();
+    renderWelcome(); renderWeek();
     setInterval(renderOut, 60000);
   }
 
   $('#roll').value = state.roll;
-  $('#roll').addEventListener('input', e => { state.roll = e.target.value.trim(); store.set('roll', state.roll); renderOut(); });
+  $('#roll').addEventListener('input', e => { state.roll = e.target.value.trim(); store.set('roll', state.roll); renderWelcome(); renderOut(); });
   document.querySelector('.seg').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     state.view = b.dataset.view;
     document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
     renderOut();
   });
+  const shiftWeek = n => { state.weekStart = addDays(state.weekStart, n * 7); renderWeek(); };
+  $('#prevWeek').addEventListener('click', () => shiftWeek(-1));
+  $('#nextWeek').addEventListener('click', () => shiftWeek(1));
+  $('#weekLabel').addEventListener('click', () => { state.weekStart = mondayOf(new Date()); state.day = todayName(); renderWeek(); });
   $('#days').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     state.day = b.dataset.day; renderDays(); renderOut();
