@@ -20,6 +20,16 @@ env:
   # Only classes under this term's heading are kept (VII, 7 or 7th all work).
   # Leave it as "" to keep every term in the files.
   TIMETABLE_TERM: "VII"
+  # Mess bill / attendance PDFs list several batches in one file; only rows whose
+  # AFG number falls in this range are kept as "ours". Change these only if the
+  # batch's AFG range ever changes (e.g. a new intake year).
+  MESSBILL_AFG_MIN: "8058"
+  MESSBILL_AFG_MAX: "8207"
+  ATTENDANCE_AFG_MIN: "8058"
+  ATTENDANCE_AFG_MAX: "8207"
+  # Minimum attendance % to be considered clear, per subject and overall.
+  ATTENDANCE_THEORY_MIN: "75"
+  ATTENDANCE_PRACTICAL_MIN: "80"
 
 jobs:
   deploy:
@@ -34,16 +44,33 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build site from the PDF
+      - name: Build timetable
         run: |
           pip install pdfplumber
           mkdir -p _site
           cp index.html _site/
+          if [ -f announcements.json ]; then cp announcements.json _site/; else echo "[]" > _site/announcements.json; fi
           if [ -f timetable.override.json ]; then
             echo "Using timetable.override.json instead of the PDF"
             cp timetable.override.json _site/timetable.json
           else
             python scripts/parse_timetable.py _site/timetable.json .
+          fi
+
+      - name: Build mess bill
+        run: |
+          if [ -f scripts/parse_messbill.py ]; then
+            python scripts/parse_messbill.py _site/messbill.json .
+          else
+            echo "scripts/parse_messbill.py not added yet, skipping mess bill"
+          fi
+
+      - name: Build attendance
+        run: |
+          if [ -f scripts/parse_attendance.py ]; then
+            python scripts/parse_attendance.py _site/attendance.json .
+          else
+            echo "scripts/parse_attendance.py not added yet, skipping attendance"
           fi
 
       - uses: actions/configure-pages@v5
