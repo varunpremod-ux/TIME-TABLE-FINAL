@@ -247,7 +247,17 @@ footer a{color:var(--accent)}
     set(k,v){ try { localStorage.setItem(k,v); } catch {} }
   };
   const state = { names: {}, weekStart: null, entries: [], holidays: [], roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
-  let messData = null, attData = null;
+  let messSummary = null, attSummary = null;
+  const messCache = new Map(), attCache = new Map(); /* roll -> that one student's data, fetched on demand */
+  /* Fetches out of a per-roll folder (messbill/<roll>.json, attendance/<roll>.json), never the
+     bulk file - so typing a roll only ever downloads that one student's data, not everyone's. */
+  function fetchOne(folder, cache, roll){
+    if (cache.has(roll)) return Promise.resolve(cache.get(roll));
+    return fetch(`${folder}/${roll}.json`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+      .then(d => { cache.set(roll, d); return d; });
+  }
   const PERSON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="5.2" r="2.6"/><path d="M2.8 14c.4-3 2.4-4.4 5.2-4.4s4.8 1.4 5.2 4.4"/></svg>';
   const PIN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s5-4.2 5-8a5 5 0 1 0-10 0c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.7"/></svg>';
 
@@ -506,23 +516,26 @@ footer a{color:var(--accent)}
   /* ---- Mess Bill ---- */
   function renderMessBill(){
     const el = $('#mbOut');
-    if (!messData){ el.innerHTML = '<p class="empty">Couldn’t load the mess bill.</p>'; return; }
+    if (!messSummary){ el.innerHTML = '<p class="empty">Couldn’t load the mess bill.</p>'; return; }
     const n = rollNum();
     if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your bill.</p>'; return; }
-    const s = messData.students[String(n)];
-    if (!s){ el.innerHTML = `<p class="empty">No mess bill found for roll ${esc(state.roll)}.</p>`; return; }
-    const rows = list => list.map(x => `<tr><td>${esc(x.label)}</td><td>₹${x.amount.toLocaleString('en-IN')}</td></tr>`).join('');
-    el.innerHTML = `
-      <h3>${esc(s.name)}</h3>
-      <div class="billgroup">
-        <h4>Normal Charges</h4>
-        <table class="billtbl">${rows(s.normal)}<tr class="tot"><td>Total</td><td>₹${s.normal_total.toLocaleString('en-IN')}</td></tr></table>
-      </div>
-      <div class="billgroup">
-        <h4>Additional Charges</h4>
-        ${s.additional.length ? `<table class="billtbl">${rows(s.additional)}<tr class="tot"><td>Total</td><td>₹${s.additional_total.toLocaleString('en-IN')}</td></tr></table>` : '<p class="empty small">No additional charges.</p>'}
-      </div>
-      <div class="grandtotal"><span>Grand Total</span><b>₹${s.total.toLocaleString('en-IN')}</b></div>`;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    fetchOne('messbill', messCache, n).then(s => {
+      if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
+      if (!s){ el.innerHTML = `<p class="empty">No mess bill found for roll ${esc(state.roll)}.</p>`; return; }
+      const rows = list => list.map(x => `<tr><td>${esc(x.label)}</td><td>₹${x.amount.toLocaleString('en-IN')}</td></tr>`).join('');
+      el.innerHTML = `
+        <h3>${esc(s.name)}</h3>
+        <div class="billgroup">
+          <h4>Normal Charges</h4>
+          <table class="billtbl">${rows(s.normal)}<tr class="tot"><td>Total</td><td>₹${s.normal_total.toLocaleString('en-IN')}</td></tr></table>
+        </div>
+        <div class="billgroup">
+          <h4>Additional Charges</h4>
+          ${s.additional.length ? `<table class="billtbl">${rows(s.additional)}<tr class="tot"><td>Total</td><td>₹${s.additional_total.toLocaleString('en-IN')}</td></tr></table>` : '<p class="empty small">No additional charges.</p>'}
+        </div>
+        <div class="grandtotal"><span>Grand Total</span><b>₹${s.total.toLocaleString('en-IN')}</b></div>`;
+    });
   }
 
   /* ---- Attendance ---- */
@@ -545,30 +558,33 @@ footer a{color:var(--accent)}
   }
   function renderAttendance(){
     const el = $('#atOut');
-    if (!attData){ el.innerHTML = '<p class="empty">Couldn’t load attendance.</p>'; return; }
+    if (!attSummary){ el.innerHTML = '<p class="empty">Couldn’t load attendance.</p>'; return; }
     const n = rollNum();
     if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your attendance.</p>'; return; }
-    const s = attData.students[String(n)];
-    if (!s){ el.innerHTML = `<p class="empty">No attendance found for roll ${esc(state.roll)}.</p>`; return; }
-    const tMin = attData.theory_min_pct, pMin = attData.practical_min_pct;
-    let rows = '';
-    for (const name of attData.subjects){
-      const sub = s.subjects[name];
-      if (!sub) continue;
-      rows += `<tr class="subjhead"><td colspan="5">${esc(name)}</td></tr>`;
-      rows += attRow('Theory', sub.theory, tMin);
-      rows += attRow('Practical', sub.practical, pMin);
-    }
-    rows += `<tr class="subjhead"><td colspan="5">Overall</td></tr>`;
-    rows += attRow('Theory', s.total_theory, tMin);
-    rows += attRow('Practical', s.total_practical, pMin);
-    el.innerHTML = `
-      <h3>${esc(s.name)}</h3>
-      <table class="atttbl">
-        <thead><tr><th></th><th>Held</th><th>Attd</th><th>%</th><th>Status</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <p class="avgline">Average <b>${s.avg_pct}%</b> · theory min ${tMin}%, practical min ${pMin}%</p>`;
+    el.innerHTML = '<p class="empty">Loading…</p>';
+    fetchOne('attendance', attCache, n).then(s => {
+      if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
+      if (!s){ el.innerHTML = `<p class="empty">No attendance found for roll ${esc(state.roll)}.</p>`; return; }
+      const tMin = attSummary.theory_min_pct, pMin = attSummary.practical_min_pct;
+      let rows = '';
+      for (const name of attSummary.subjects){
+        const sub = s.subjects[name];
+        if (!sub) continue;
+        rows += `<tr class="subjhead"><td colspan="5">${esc(name)}</td></tr>`;
+        rows += attRow('Theory', sub.theory, tMin);
+        rows += attRow('Practical', sub.practical, pMin);
+      }
+      rows += `<tr class="subjhead"><td colspan="5">Overall</td></tr>`;
+      rows += attRow('Theory', s.total_theory, tMin);
+      rows += attRow('Practical', s.total_practical, pMin);
+      el.innerHTML = `
+        <h3>${esc(s.name)}</h3>
+        <table class="atttbl">
+          <thead><tr><th></th><th>Held</th><th>Attd</th><th>%</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="avgline">Average <b>${s.avg_pct}%</b> · theory min ${tMin}%, practical min ${pMin}%</p>`;
+    });
   }
 
   /* ---- Home: mess bill reminder banner (shows 11th–16th of the month, dismissible for that month) ---- */
@@ -600,11 +616,16 @@ footer a{color:var(--accent)}
 
   /* ---- roll input: shared across Home + all three sections ---- */
   $('#roll').value = state.roll;
+  let rollDebounce = null;
   $('#roll').addEventListener('input', e => {
     state.roll = e.target.value.trim();
     store.set('roll', state.roll);
     $('#calMsg').textContent = '';
-    renderWelcome(); renderReminder(); renderOut(); renderMessBill(); renderAttendance();
+    renderWelcome(); renderReminder(); renderOut();
+    /* Debounced: each keystroke would otherwise fetch a different (possibly someone else's)
+       roll's file while typing - e.g. "136" briefly fetches roll 1, then 13, then 136. */
+    clearTimeout(rollDebounce);
+    rollDebounce = setTimeout(() => { renderMessBill(); renderAttendance(); }, 350);
   });
   document.querySelector('.seg')?.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -626,6 +647,8 @@ footer a{color:var(--accent)}
     for (const v of VIEWS) $('#view-' + v).hidden = v !== view;
     if (view === 'timetable') { renderDays(); renderOut(); }
     if (view === 'home') renderReminder();
+    if (view === 'messbill') renderMessBill();
+    if (view === 'attendance') renderAttendance();
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
@@ -641,7 +664,7 @@ footer a{color:var(--accent)}
   fetch('messbill.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(d => {
-      messData = d;
+      messSummary = d;
       $('#mbTitle').textContent = d.title || 'Mess Bill';
       $('#mbSub').textContent = d.month || '';
       $('#mbUpdated').textContent = d.updated ? 'Updated ' + fmtDate(new Date(d.updated)) : '';
@@ -652,7 +675,7 @@ footer a{color:var(--accent)}
   fetch('attendance.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(d => {
-      attData = d;
+      attSummary = d;
       $('#atTitle').textContent = d.title || 'Attendance';
       $('#atSub').textContent = d.as_of ? 'Till ' + d.as_of : '';
       $('#atUpdated').textContent = [d.term, d.updated ? 'updated ' + fmtDate(new Date(d.updated)) : ''].filter(Boolean).join(' · ');
