@@ -29,6 +29,16 @@ show pass/fail and "how many more to attend" without the numbers being
 baked into the page - override via those two env vars if the minimums ever
 change. ATTENDANCE_AS_OF overrides the "up to" date read from the PDF.
 
+One file per roll, not one file for everyone: attendance.json itself holds
+only the shared metadata (title, as-of date, subjects, thresholds), not any
+student data. Each student's own record is written separately to
+attendance/<roll>.json, and the site fetches only the one file for whatever
+roll is typed in - so loading the site doesn't hand every visitor's browser
+all 150 students' names and attendance figures at once. This isn't real
+per-student login (anyone who knows a roll number can still fetch that one
+file directly), but it means browsing the site no longer downloads everyone
+else's data along with your own.
+
 Most recent report only: these are cumulative reports, so a newer one fully
 replaces an older one rather than adding to it. If more than one attendance
 PDF is sitting in the repo, only the one with the latest "up to" date is
@@ -246,7 +256,18 @@ def main():
         "avg_pct": r["avg_pct"],
     } for r in ours}
 
-    data = {
+    outdir = os.path.dirname(os.path.abspath(dst))
+    perroll_dir = os.path.join(outdir, "attendance")
+    os.makedirs(perroll_dir, exist_ok=True)
+    # Wipe last report's per-roll files first so nobody's old file lingers.
+    for f in os.listdir(perroll_dir):
+        if f.endswith(".json"):
+            os.remove(os.path.join(perroll_dir, f))
+    for roll, student in students.items():
+        with open(os.path.join(perroll_dir, f"{roll}.json"), "w", encoding="utf-8") as f:
+            json.dump(student, f, ensure_ascii=False, indent=2)
+
+    summary = {
         "title": "Attendance",
         "as_of": os.environ.get("ATTENDANCE_AS_OF", "") or as_of or "",
         "term": term or "",
@@ -254,13 +275,12 @@ def main():
         "theory_min_pct": int(os.environ.get("ATTENDANCE_THEORY_MIN", "75")),
         "practical_min_pct": int(os.environ.get("ATTENDANCE_PRACTICAL_MIN", "80")),
         "subjects": subjects_seen,
-        "students": students,
     }
-    os.makedirs(os.path.dirname(os.path.abspath(dst)), exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"{data['as_of'] or 'attendance'}: {len(students)} students (AFG {afg_min}-{afg_max}), "
-          f"subjects: {', '.join(subjects_seen)}")
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    print(f"{summary['as_of'] or 'attendance'}: {len(students)} students (AFG {afg_min}-{afg_max}), "
+          f"subjects: {', '.join(subjects_seen)}, written to {perroll_dir}/<roll>.json")
 
 
 if __name__ == "__main__":

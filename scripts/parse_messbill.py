@@ -40,6 +40,15 @@ actually non-zero for that student are listed, so the site can show
 Month: read from the PDF's own heading ("MESS BILL FOR THE MONTH OF AUG
 2026"). MESSBILL_MONTH=September 2026 in deploy.yml can override it.
 
+One file per roll, not one file for everyone: messbill.json itself holds only
+the month/title (no student data), so loading the site doesn't hand every
+visitor's browser all 150 students' names, AFG numbers and bills in one go.
+Each student's own bill is written separately to messbill/<roll>.json, and
+the site fetches only the one file for whatever roll is typed in. This isn't
+real per-student login (anyone who knows a roll number can still fetch that
+one file directly), but it means browsing the site no longer downloads
+everyone else's data along with your own.
+
 One month at a time: if more than one mess bill PDF is sitting in the repo (an
 old month never got deleted), only the PDF(s) for the newest month - by the
 month printed in the PDF itself, not the file name - are used; older ones are
@@ -283,18 +292,28 @@ def main():
         students[str(i)] = build_student(rec)
 
     month = os.environ.get("MESSBILL_MONTH", "") or month or "This month"
-    data = {
-        "title": "Mess Bill",
-        "month": month,
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "students": students,
-    }
-    os.makedirs(os.path.dirname(os.path.abspath(dst)), exist_ok=True)
+    updated = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    outdir = os.path.dirname(os.path.abspath(dst))
+    perroll_dir = os.path.join(outdir, "messbill")
+    os.makedirs(perroll_dir, exist_ok=True)
+
+    # Wipe last month's per-roll files first so nobody's old file lingers if this
+    # month has fewer students than last month did.
+    for f in os.listdir(perroll_dir):
+        if f.endswith(".json"):
+            os.remove(os.path.join(perroll_dir, f))
+    for roll, student in students.items():
+        with open(os.path.join(perroll_dir, f"{roll}.json"), "w", encoding="utf-8") as f:
+            json.dump({"roll": roll, **student}, f, ensure_ascii=False, indent=2)
+
+    summary = {"title": "Mess Bill", "month": month, "updated": updated}
+    os.makedirs(outdir, exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+
     total_sum = sum(s["total"] for s in students.values())
     print(f"{month}: {len(students)} students (AFG {afg_min}-{afg_max}), "
-          f"total billed {total_sum}")
+          f"total billed {total_sum}, written to {perroll_dir}/<roll>.json")
 
 
 if __name__ == "__main__":
