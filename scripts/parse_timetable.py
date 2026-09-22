@@ -843,14 +843,31 @@ def time_bounds(t):
     return s, e
 
 
-def apply_overrides(entries):
-    """Two rows can end up describing the same lecture: the overall block timetable's generic slot
-    ("Theory - Surgery") next to a department's own row for it, or the very same class read from two
-    different uploads with slightly different wording ("Paediatrics" vs "Pediatrics", "PE 20.7" vs
-    "PE: 20.7"). Wherever two rows share a weekday, department and overlapping time, on the dates
-    they share only one is kept: a generic block-timetable slot always loses to a specific row; between
-    two specific rows, the more detailed one (longer class/faculty/location text) is kept, so the
-    lecture is listed once."""
+def fold_in(keep, extra):
+    """Add any faculty/location text from `extra` that isn't already covered by `keep`, so a suppressed
+    duplicate row's detail is kept rather than thrown away."""
+    for field in ("faculty", "location"):
+        parts = [p.strip() for p in re.split(r"\s*,\s*", keep.get(field, "")) if p.strip()]
+        low = {p.lower() for p in parts}
+        for p in [x.strip() for x in re.split(r"\s*,\s*", extra.get(field, "")) if x.strip()]:
+            if p.lower() not in low:
+                parts.append(p)
+                low.add(p.lower())
+        keep[field] = ", ".join(parts)
+
+
+def apply_overrides(entries, wk_days):
+    """Two rows can end up describing the same lecture on a day of the published week: the overall
+    block timetable's generic slot ("Theory - Surgery") next to a department's own row for it, or the
+    very same class read from two different uploads with slightly different wording ("Paediatrics" vs
+    "Pediatrics"). This is checked one published day at a time (not by comparing each row's own date
+    range), so it also catches a department row that carries no date at all. Wherever two rows are both
+    active on the same day, share a weekday, department and overlapping time, only one is shown for that
+    day, but neither one's detail is thrown away: a generic block-timetable slot always loses to a
+    specific row, and between two specific rows the more detailed one (longer class/faculty/location
+    text) is kept as the primary; either way, any faculty or location on the row that's hidden, which
+    the row that's kept doesn't already have, is folded into it. So the lecture is listed once, with
+    everything both rows said about it."""
     FOREVER = 10 ** 6
     span = lambda e: ((date.fromisoformat(e["to"]) - date.fromisoformat(e["from"])).days + 1
                       if e.get("from") and e.get("to") else FOREVER)
@@ -858,34 +875,31 @@ def apply_overrides(entries):
     same_subject = lambda a, b: re.sub(r"\W", "", a.lower()) == re.sub(r"\W", "", b.lower()) or \
         bool(dept_keys(a) & dept_keys(b))
     quality = lambda e: len(e.get("class", "")) + len(e.get("faculty", "")) + len(e.get("location", ""))
-    live = [e for e in entries if not e.get("rot") and e["day"] != "*" and e.get("from") and e.get("to")]
+    live = [e for e in entries if not e.get("rot") and e["day"] != "*"]
 
-    for i, a in enumerate(live):
-        ab = time_bounds(a["time"])
-        if not ab:
-            continue
-        for b in live[i + 1:]:
-            if b["day"] != a["day"] or not same_subject(a["subject"], b["subject"]):
+    for d in wk_days:
+        today = [e for e in live if applies_on(e, d)]
+        for i, a in enumerate(today):
+            ab = time_bounds(a["time"])
+            if not ab:
                 continue
-            if a["rolls"] not in ("All", "") and b["rolls"] not in ("All", "") and a["rolls"] != b["rolls"]:
-                continue  # a row for some batches only doesn't override the slot for the others
-            bb = time_bounds(b["time"])
-            if not bb or not (ab[0] < bb[1] and bb[0] < ab[1]):
-                continue
-            lo = max(date.fromisoformat(a["from"]), date.fromisoformat(b["from"]))
-            hi = min(date.fromisoformat(a["to"]), date.fromisoformat(b["to"]))
-            if lo > hi:
-                continue
-            at, bt = is_template(a), is_template(b)
-            if at != bt:
-                loser = a if at else b  # a generic block-timetable slot always loses to a specific row
-            else:
-                loser = b if quality(a) >= quality(b) else a  # otherwise keep the more detailed row
-            d = lo
-            while d <= hi:
-                if d.weekday() == DAY_ORDER.index(a["day"]) and applies_on(a, d) and applies_on(b, d):
-                    loser.setdefault("skip", []).append(d.isoformat())
-                d += timedelta(days=1)
+            for b in today[i + 1:]:
+                if not same_subject(a["subject"], b["subject"]):
+                    continue
+                if a["rolls"] not in ("All", "") and b["rolls"] not in ("All", "") and a["rolls"] != b["rolls"]:
+                    continue  # a row for some batches only doesn't override the slot for the others
+                bb = time_bounds(b["time"])
+                if not bb or not (ab[0] < bb[1] and bb[0] < ab[1]):
+                    continue
+                at, bt = is_template(a), is_template(b)
+                if at != bt:
+                    keep, drop = (b, a) if at else (a, b)  # a generic block-timetable slot always loses
+                else:
+                    keep, drop = (a, b) if quality(a) >= quality(b) else (b, a)  # otherwise the fuller row
+                fold_in(keep, drop)
+                skip = drop.setdefault("skip", [])
+                if d.isoformat() not in skip:
+                    skip.append(d.isoformat())
     return entries
 
 
@@ -1128,7 +1142,6 @@ def main():
                      f"(add Days / Time columns to clinics.csv to change)"))
             for pr in sorted(cproblems):
                 print(f"WARNING clinics.csv: {pr}")
-    entries = apply_overrides(entries)
     # A day is a holiday when it's marked so (or listed with nothing under it) and no class falls on it.
     # A holiday with a date applies to that date only; one without repeats every week on that weekday.
     marked = {}
@@ -1182,6 +1195,7 @@ def main():
     wk_days = [wk_start + timedelta(days=i) for i in range(7)]
     wk_end = wk_days[-1]
     older = sorted(n for w, n in weekly_files if w < wk_start)
+    entries = apply_overrides(entries, wk_days)
     before = len(entries)
     entries = [e for e in entries if any(applies_on(e, d) for d in wk_days)]
     holidays = [h for h in holidays if not h.get("date") or wk_start.isoformat() <= h["date"] <= wk_end.isoformat()]
@@ -1216,4 +1230,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
