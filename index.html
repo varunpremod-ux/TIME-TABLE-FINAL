@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Jaegers Hub</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F6B5C">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jaegers Hub">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,6 +22,8 @@
   --lecture:#0F6B5C; --practical:#B4531E; --other:#5A5F9E;
   --display:'Bricolage Grotesque',Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --ok:#1F7A3D; --warn:#B4531E;
+  --shadow:0 1px 2px rgba(18,33,30,.05), 0 6px 16px -8px rgba(18,33,30,.10);
+  --shadow-sm:0 1px 2px rgba(18,33,30,.05);
 }
 @media (prefers-color-scheme:dark){
   :root{
@@ -22,11 +31,13 @@
     --accent:#4FC3AC; --accent-ink:#06211B; --signal:#F2B93B;
     --lecture:#4FC3AC; --practical:#F0894F; --other:#9AA0E8;
     --ok:#5FD087; --warn:#F0894F;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 10px 24px -10px rgba(0,0,0,.5);
+    --shadow-sm:0 1px 0 rgba(255,255,255,.02);
   }
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body{margin:0;background:var(--bg) radial-gradient(1100px 520px at 50% -80px,color-mix(in srgb,var(--accent) 7%,transparent),transparent 70%) fixed;color:var(--ink);font:16px/1.5 Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 main{max-width:640px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px 72px}
 h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
 h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
@@ -35,7 +46,7 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .back{display:inline-block;margin:0 0 16px;color:var(--muted);font:600 14px Figtree,system-ui,sans-serif;text-decoration:none}
 .back:hover{color:var(--ink)}
 
-.roll{display:flex;align-items:center;gap:12px;margin:22px 0 14px;padding:10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.roll{display:flex;align-items:center;gap:12px;margin:22px 0 14px;padding:10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm)}
 .roll:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .roll label{font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap}
 .roll input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);outline:none;text-align:right;font:800 30px/1.2 var(--display);letter-spacing:-.01em}
@@ -43,42 +54,56 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 
 .welcome{margin:-6px 4px 18px;font:800 20px/1.2 var(--display);letter-spacing:-.01em;color:var(--accent)}
 
-.banner{display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;padding:14px 16px;background:#FFF6E0;border:1px solid #EFD48A;border-radius:14px}
-.banner .icon{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center;font:800 13px var(--display)}
-.banner .txt{flex:1;font-size:14px;line-height:1.4;color:#231A00}
-.banner .txt b{display:block;font:700 14.5px/1.3 Figtree,sans-serif;margin-bottom:2px}
-.banner button{margin-top:8px;border:1px solid var(--signal);background:transparent;color:#8a5a00;font:700 13px Figtree,sans-serif;padding:6px 12px;border-radius:999px;cursor:pointer}
+.banner{display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;padding:14px 16px;background:#FFF6E0;border:1px solid #EFD48A;border-radius:14px;box-shadow:var(--shadow-sm)}
+.banner .icon{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center;font:800 14px var(--display)}
+.banner .icon svg{width:14px;height:14px}
+.banner .txt{flex:1;font-size:15px;line-height:1.4;color:#231A00}
+.banner .txt b{display:block;font:700 15.5px/1.3 Figtree,sans-serif;margin-bottom:3px}
+.banner button{margin-top:9px;margin-right:8px;border:1px solid var(--signal);background:transparent;color:#8a5a00;font:700 13.5px Figtree,sans-serif;padding:7px 13px;border-radius:999px;cursor:pointer}
+.banner.install{background:color-mix(in srgb,var(--accent) 9%,var(--surface));border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.banner.install .icon{background:var(--accent);color:var(--accent-ink)}
+.banner.install .txt{color:var(--ink)}
+.banner.install .txt b{color:var(--ink)}
+.banner.install button{border-color:var(--accent);color:var(--accent)}
+.banner.install button#installBtn{background:var(--accent);color:var(--accent-ink)}
 
-.strip{--tint:var(--accent);--tint-ink:var(--accent-ink);position:relative;display:flex;align-items:center;gap:13px;margin:0 0 14px;padding:13px 16px;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);animation:stripIn .4s cubic-bezier(.2,.8,.3,1) both}
+.strip{--tint:var(--accent);--tint-ink:var(--accent-ink);position:relative;display:flex;align-items:center;gap:13px;margin:0 0 14px;padding:13px 16px;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:stripIn .4s cubic-bezier(.2,.8,.3,1) both}
 .strip::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,color-mix(in srgb,var(--tint) 16%,transparent),transparent 65%);pointer-events:none}
 .strip.next{--tint:var(--muted);--tint-ink:var(--surface)}
 .strip.date{--tint:var(--signal);--tint-ink:var(--signal-ink)}
-.strip .icon{position:relative;flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:var(--tint);color:var(--tint-ink);display:flex;align-items:center;justify-content:center}
-.strip .icon svg{width:19px;height:19px}
+.strip .icon{position:relative;flex:0 0 auto;width:46px;height:46px;border-radius:14px;background:var(--tint);color:var(--tint-ink);display:flex;align-items:center;justify-content:center}
+.strip .icon svg{width:23px;height:23px}
 .strip .body{position:relative;flex:1;min-width:0}
-.strip .tag{display:flex;align-items:center;gap:5px;font:700 10.5px Figtree,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--tint)}
+.strip .tag{display:flex;align-items:center;gap:5px;font:700 11.5px Figtree,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--tint)}
 .strip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:stripPulse 1.6s ease-in-out infinite}
-.strip .txt{display:block;margin-top:2px;font:800 16px/1.25 var(--display);color:var(--ink);letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.strip .txt .sub{display:block;margin-top:1px;font:500 12.5px Figtree,sans-serif;color:var(--muted);white-space:normal}
+.strip .txt{display:block;margin-top:3px;font:800 18px/1.28 var(--display);color:var(--ink);letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip .txt .sub{display:block;margin-top:2px;font:500 13.5px Figtree,sans-serif;color:var(--muted);white-space:normal}
 @keyframes stripIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 @keyframes stripPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
 @media (prefers-reduced-motion:reduce){.strip{animation:none}.strip .dot{animation:none}}
 
-.announce{margin:0 0 22px;padding:12px 16px;border:1px dashed var(--line);border-radius:14px;background:var(--surface)}
-.announce b.lbl{display:block;font:700 12px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.announce .note{font-size:14px}
-.announce .note+.note{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
-.announce .note b{display:inline;font:700 13px Figtree;color:var(--ink)}
-.announce .note .date{display:block;margin-top:2px;color:var(--muted);font-size:12px}
+.announce{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm)}
+.announce .aicon{flex:0 0 auto;width:36px;height:36px;border-radius:11px;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center}
+.announce .aicon svg{width:18px;height:18px}
+.announce .content{flex:1;min-width:0}
+.announce b.lbl{display:block;font:700 12.5px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.announce .note{font-size:15px}
+.announce .note+.note{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+.announce .note b{display:inline;font:700 14px Figtree;color:var(--ink)}
+.announce .note .date{display:block;margin-top:3px;color:var(--muted);font-size:13px}
 
 .cards{display:flex;flex-direction:column;gap:10px}
-.card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;text-decoration:none;color:inherit}
-.card .left h2{font-size:20px;font-weight:800}
-.card .left p{margin:3px 0 0;color:var(--muted);font-size:13.5px}
-.card .chev{color:var(--muted);font-size:20px}
-.card.tt{border-left:5px solid var(--lecture)}
-.card.mb{border-left:5px solid var(--practical)}
-.card.at{border-left:5px solid var(--other)}
+.card{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
+.card:active{transform:scale(.98);box-shadow:var(--shadow-sm)}
+.card .cicon{flex:0 0 auto;width:50px;height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:var(--surface)}
+.card .cicon svg{width:25px;height:25px}
+.card.tt .cicon{background:var(--lecture)}
+.card.mb .cicon{background:var(--practical)}
+.card.at .cicon{background:var(--other)}
+.card .left{flex:1;min-width:0}
+.card .left h2{font-size:22px;font-weight:800}
+.card .left p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.card .chev{color:var(--muted);font-size:22px}
 
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--line);border-radius:12px}
 .seg button{border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer}
@@ -98,23 +123,23 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .head h2{font-size:24px;font-weight:800;letter-spacing:-.01em}
 .head p{margin:0;color:var(--muted);font-size:14px}
 
-.card2{--kind:var(--other);display:grid;grid-template-columns:64px 1fr;gap:14px;margin-top:10px;padding:14px 14px 14px 12px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--kind);border-radius:12px}
+.card2{--kind:var(--other);display:grid;grid-template-columns:64px 1fr;gap:14px;margin-top:10px;padding:14px 14px 14px 12px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--kind);border-radius:12px;box-shadow:var(--shadow-sm);transition:box-shadow .2s ease}
 .card2.lecture{--kind:var(--lecture)}
 .card2.practical{--kind:var(--practical)}
 .card2.now{outline:2px solid var(--signal);outline-offset:2px}
 .t{font-variant-numeric:tabular-nums}
-.t b{display:block;font:800 20px/1.1 var(--display)}
-.t span{display:block;margin-top:2px;color:var(--muted);font-size:13px}
-.card2 h3{font-size:20px;font-weight:600;letter-spacing:-.005em}
-.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font-size:14px;color:var(--muted)}
+.t b{display:block;font:800 21px/1.15 var(--display)}
+.t span{display:block;margin-top:2px;color:var(--muted);font-size:13.5px}
+.card2 h3{font-size:21px;font-weight:600;letter-spacing:-.005em}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font-size:14.5px;color:var(--muted)}
 .meta .kind{font-weight:600;color:var(--kind)}
-.meta svg{width:13px;height:13px;margin-right:4px;vertical-align:-1px}
+.meta svg{width:14px;height:14px;margin-right:4px;vertical-align:-1px}
 .flag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--signal);color:var(--signal-ink);font:600 12px Figtree,system-ui,sans-serif;vertical-align:3px}
 .flag.next{background:transparent;color:var(--muted);border:1px solid var(--line)}
 
 .slot{margin-top:20px}
 .slot h3{font-size:16px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
-.slot ul{list-style:none;margin:8px 0 0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.slot ul{list-style:none;margin:8px 0 0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
 .slot li{display:grid;grid-template-columns:92px 1fr minmax(0,38%);gap:12px;align-items:center;padding:12px 14px}
 .slot li+li{border-top:1px solid var(--line)}
 .slot li.mine{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
@@ -125,17 +150,25 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .loc{color:var(--muted);font-size:14px;text-align:right}
 
 .days button.off:not([aria-pressed=true]){color:var(--muted)}
-.holiday{margin-top:12px;padding:36px 18px;text-align:center;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--signal);border-radius:12px}
+.holiday{margin-top:12px;padding:36px 18px;text-align:center;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--signal);border-radius:12px;box-shadow:var(--shadow-sm)}
 .holiday h3{font:800 36px/1.1 var(--display);letter-spacing:-.02em}
 .holiday p{margin:10px 0 0;color:var(--muted)}
 .card2,.slot li,.holiday{transition:opacity .4s}
 .card2.past,.slot li.past,.holiday.past{opacity:.5;filter:saturate(.55)}
 .days button.past:not([aria-pressed=true]){opacity:.55}
 .notice{margin:12px 0 0;padding:12px 14px;border-radius:10px;border:1px dashed var(--line);background:var(--surface);color:var(--muted);font-size:14px}
-.calbtn{display:block;width:100%;margin-top:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer}
+.calbtn{display:block;width:100%;margin-top:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .15s ease}
+.calbtn:active{transform:scale(.98)}
 .calmsg{min-height:1.2em;margin:6px 2px 0;font-size:13px;color:var(--muted)}
-.empty{margin:28px 0;padding:22px 16px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
-.empty.small{margin:8px 0;padding:12px}
+.empty{margin:20px 0;padding:26px 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm);color:var(--muted);text-align:center}
+.empty.small{margin:8px 0;padding:12px;box-shadow:none}
+
+/* Loading skeleton: a soft shimmer standing in for the cards about to appear, instead of a bare
+   "Loading…" line. */
+.skel{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.skel .sk-row{height:60px;border-radius:12px;background:var(--surface);border:1px solid var(--line);background-image:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--ink) 7%,transparent) 50%,transparent 70%);background-size:250% 100%;animation:shimmer 1.5s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel .sk-row{animation:none}}
 .panelhead{margin:0 0 0}
 .panelhead h2{font-size:28px;font-weight:800;letter-spacing:-.01em;font-family:var(--display)}
 .panelhead p.sub{margin:4px 0 0}
@@ -146,33 +179,45 @@ footer a{color:var(--accent)}
 /* Mess bill */
 .billgroup{margin-top:20px}
 .billgroup h4{margin:0 0 8px;font:700 13px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
-.billtbl{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.billtbl{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
 .billtbl td{padding:11px 14px;font-size:15px;border-top:1px solid var(--line)}
 .billtbl tr:first-child td{border-top:0}
 .billtbl td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .billtbl tr.tot td{font-weight:800;background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-.grandtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding:16px;background:var(--accent);color:var(--accent-ink);border-radius:12px;font:700 16px Figtree,sans-serif}
+.grandtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding:16px;background:var(--accent);color:var(--accent-ink);border-radius:12px;font:700 16px Figtree,sans-serif;box-shadow:var(--shadow)}
 .grandtotal b{font:800 26px var(--display)}
 
 /* Attendance */
-.atttbl{width:100%;border-collapse:collapse;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
+.atttbl{width:100%;border-collapse:collapse;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14.5px;box-shadow:var(--shadow-sm)}
 .atttbl th{text-align:left;padding:9px 10px;color:var(--muted);font:600 12px Figtree,sans-serif;text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--line)}
 .atttbl td{padding:10px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.atttbl tr.subjhead td{padding:10px 10px 4px;border-top:1px solid var(--line);font:800 13px var(--display);color:var(--ink);text-transform:none;letter-spacing:0;background:color-mix(in srgb,var(--ink) 4%,var(--surface))}
+.atttbl tr.subjhead td{padding:10px 10px 4px;border-top:1px solid var(--line);font:800 14px var(--display);color:var(--ink);text-transform:none;letter-spacing:0;background:color-mix(in srgb,var(--ink) 4%,var(--surface))}
 .atttbl tr:first-child td{border-top:0}
-.badge{display:inline-block;padding:3px 9px;border-radius:999px;font:700 12.5px Figtree,sans-serif;white-space:nowrap}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font:700 13px Figtree,sans-serif;white-space:nowrap}
 .badge.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .badge.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-.avgline{margin:14px 2px 0;color:var(--muted);font-size:14px}
-.avgline b{color:var(--ink);font:800 18px var(--display)}
-.motiv{display:flex;gap:12px;align-items:flex-start;margin:12px 0 0;padding:14px 15px;border-radius:14px}
-.motiv .micon{flex:0 0 auto;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
-.motiv .micon svg{width:15px;height:15px}
-.motiv p{margin:0;flex:1;font:600 14px/1.45 Figtree,sans-serif;color:var(--ink)}
+.avgline{margin:14px 2px 0;color:var(--muted);font-size:15px}
+.avgline b{color:var(--ink);font:800 19px var(--display)}
+.motiv{display:flex;gap:13px;align-items:flex-start;margin:12px 0 0;padding:15px 16px;border-radius:14px;box-shadow:var(--shadow-sm)}
+.motiv .micon{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.motiv .micon svg{width:18px;height:18px}
+.motiv p{margin:0;flex:1;font:600 15px/1.5 Figtree,sans-serif;color:var(--ink)}
 .motiv.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
 .motiv.ok .micon{background:var(--ok)}
 .motiv.warn{background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
 .motiv.warn .micon{background:var(--warn)}
+
+/* Attendance progress bars: the Overall theory/practical numbers, visualised - a filled bar
+   with a tick mark at the required minimum, so "how close" reads at a glance before the
+   numbers even register. */
+.progress{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.prow .plabel{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 6px;font-size:14px;color:var(--muted)}
+.prow .plabel b{font:800 17px var(--display);color:var(--ink);letter-spacing:-.005em}
+.pbar{position:relative;height:9px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,var(--surface))}
+.pfill{position:absolute;inset:0;border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.pfill.ok{background:var(--ok)}
+.pfill.warn{background:var(--warn)}
+.ptick{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--ink);opacity:.3}
 </style>
 </head>
 <body>
@@ -207,24 +252,42 @@ footer a{color:var(--accent)}
     </div>
 
     <div class="announce" id="announceBox" hidden>
-      <b class="lbl">Announcements</b>
-      <div class="body"></div>
+      <div class="aicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5V7a4 4 0 0 1 8 0v3.5l1 2H3l1-2z"/><path d="M6.6 13.2a1.4 1.4 0 0 0 2.8 0"/></svg></div>
+      <div class="content">
+        <b class="lbl">Announcements</b>
+        <div class="body"></div>
+      </div>
     </div>
 
     <nav class="cards">
       <a class="card tt" href="#timetable">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.3" width="12" height="10.5" rx="1.8"/><path d="M2 6.5h12M5.2 2v2.6M10.8 2v2.6"/></svg></div>
         <div class="left"><h2>Timetable</h2><p id="ttSub">Loading…</p></div>
         <div class="chev">›</div>
       </a>
       <a class="card mb" href="#messbill">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 1.8v3.9M5 1.8v3.9M6.4 1.8v3.9M5 5.7V14.2"/><path d="M11 1.8c1.6.3 1.6 3.6 0 3.9V14.2"/></svg></div>
         <div class="left"><h2>Mess Bill</h2><p id="mbSub">Loading…</p></div>
         <div class="chev">›</div>
       </a>
       <a class="card at" href="#attendance">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.8" y="2.6" width="10.4" height="11.8" rx="1.8"/><rect x="6" y="1.4" width="4" height="2" rx="0.8" fill="currentColor" stroke="none"/><path d="M5.4 8.6l1.8 1.8 3.4-3.8"/></svg></div>
         <div class="left"><h2>Attendance</h2><p id="atSub">Loading…</p></div>
         <div class="chev">›</div>
       </a>
     </nav>
+
+    <div class="banner install" id="installBanner" hidden>
+      <div class="icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v7.4M5 7l3 3 3-3"/><path d="M2.6 11.4v1.4a1.6 1.6 0 0 0 1.6 1.6h7.6a1.6 1.6 0 0 0 1.6-1.6v-1.4"/></svg></div>
+      <div class="txt">
+        <b>Install Jaegers Hub</b>
+        <span id="installText">Add this to your home screen for one-tap access.</span>
+        <div>
+          <button type="button" id="installBtn" hidden>Install</button>
+          <button type="button" id="installDismiss">Maybe later</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section id="view-timetable" hidden>
@@ -245,7 +308,7 @@ footer a{color:var(--accent)}
       <p class="calmsg" id="calMsg" role="status"></p>
     </div>
 
-    <section id="out" aria-live="polite"><p class="empty">Loading timetable…</p></section>
+    <section id="out" aria-live="polite"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></section>
     <footer id="foot" hidden></footer>
   </section>
 
@@ -255,7 +318,7 @@ footer a{color:var(--accent)}
       <h2 id="mbTitle">Mess Bill</h2>
       <p class="sub" id="mbUpdated"></p>
     </div>
-    <div id="mbOut"><p class="empty">Loading…</p></div>
+    <div id="mbOut"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></div>
   </section>
 
   <section id="view-attendance" hidden>
@@ -264,7 +327,7 @@ footer a{color:var(--accent)}
       <h2 id="atTitle">Attendance</h2>
       <p class="sub" id="atUpdated"></p>
     </div>
-    <div id="atOut"><p class="empty">Loading…</p></div>
+    <div id="atOut"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></div>
   </section>
 
 </main>
@@ -274,12 +337,15 @@ footer a{color:var(--accent)}
   const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const skeleton = (n = 3) => '<div class="skel">' + '<div class="sk-row"></div>'.repeat(n) + '</div>';
   const store = {
     get(k){ try { return localStorage.getItem(k); } catch { return null; } },
     set(k,v){ try { localStorage.setItem(k,v); } catch {} }
   };
   const state = { names: {}, weekStart: null, entries: [], holidays: [], keyDates: [], roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
   let messSummary = null, attSummary = null;
+  let messReady = false, attReady = false; /* true once that summary's fetch has settled, success or fail -
+    lets route() tell "hasn't loaded yet" (keep the skeleton) apart from "genuinely failed" (show the error) */
   const messCache = new Map(), attCache = new Map(); /* roll -> that one student's data, fetched on demand */
   /* Fetches out of a per-roll folder (messbill/<roll>.json, attendance/<roll>.json), never the
      bulk file - so typing a roll only ever downloads that one student's data, not everyone's. */
@@ -296,6 +362,8 @@ footer a{color:var(--accent)}
   const CALENDAR = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.3" width="12" height="10.5" rx="1.8"/><path d="M2 6.5h12M5.2 2v2.6M10.8 2v2.6"/></svg>';
   const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.4l3.2 3.2L13 4.7"/></svg>';
   const TREND = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12.2l4-4 2.4 2.4L14 4.6"/><path d="M9.6 4.6H14v4.4"/></svg>';
+  const LECTURE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.2c1.8-.9 3.6-.9 5.4 0v9.2c-1.8-.9-3.6-.9-5.4 0z"/><path d="M13.4 3.2c-1.8-.9-3.6-.9-5.4 0v9.2c1.8-.9 3.6-.9 5.4 0z"/></svg>';
+  const PRACTICAL_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 1.8h3.6M6.8 1.8v3.7L3.3 12a1.3 1.3 0 0 0 1.2 1.9h7l0 0a1.3 1.3 0 0 0 1.2-1.9L9.2 5.5V1.8"/><path d="M5.6 9.6h4.8"/></svg>';
 
   /* ---- dates: the timetable repeats weekly; some entries (clinics) only run between two dates ---- */
   const pad = n => String(n).padStart(2, '0');
@@ -439,12 +507,14 @@ footer a{color:var(--accent)}
       out.innerHTML = head + mine.map((e, i) => {
         const [a, b] = e.parts;
         const flag = i === nowIdx ? '<span class="flag">Now</span>' : i === nextIdx ? '<span class="flag next">Next</span>' : '';
-        return `<article class="card2 ${kindOf(e.class)}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}">
+        const kind = kindOf(e.class);
+        const kindIcon = kind === 'lecture' ? LECTURE_ICON : kind === 'practical' ? PRACTICAL_ICON : '';
+        return `<article class="card2 ${kind}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}">
           <div class="t"><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div>
           <div>
             <h3>${esc(e.subject)}${flag}</h3>
             <p class="meta">
-              ${e.class ? `<span class="kind">${esc(e.class)}</span>` : ''}
+              ${e.class ? `<span class="kind">${kindIcon}${esc(e.class)}</span>` : ''}
               ${e.faculty ? `<span>${PERSON}${esc(e.faculty)}</span>` : ''}
               ${e.location ? `<span>${PIN}${esc(e.location)}</span>` : ''}
               <span>${esc(rollLabel(e))}</span>
@@ -555,7 +625,7 @@ footer a{color:var(--accent)}
     if (!messSummary){ el.innerHTML = '<p class="empty">Couldn’t load the mess bill.</p>'; return; }
     const n = rollNum();
     if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your bill.</p>'; return; }
-    el.innerHTML = '<p class="empty">Loading…</p>';
+    el.innerHTML = skeleton(3);
     fetchOne('messbill', messCache, n).then(s => {
       if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
       if (!s){ el.innerHTML = `<p class="empty">No mess bill found for roll ${esc(state.roll)}.</p>`; return; }
@@ -584,6 +654,18 @@ footer a{color:var(--accent)}
     const num = minPct * held - 100 * attd;
     const den = 100 - minPct;
     return Math.max(0, Math.ceil(num / den));
+  }
+  /* A filled bar for one Overall figure, with a tick at the required minimum - "how close" reads
+     before the numbers do. */
+  function progressRow(label, block, minPct){
+    if (!block) return '';
+    const ok = block.pct >= minPct;
+    const fillPct = Math.max(0, Math.min(100, block.pct));
+    const tickPct = Math.max(0, Math.min(100, minPct));
+    return `<div class="prow">
+      <div class="plabel"><span>${esc(label)}</span><b>${block.pct}%</b></div>
+      <div class="pbar"><div class="pfill ${ok ? 'ok' : 'warn'}" style="width:${fillPct}%"></div><div class="ptick" style="left:${tickPct}%"></div></div>
+    </div>`;
   }
   function attRow(label, block, minPct){
     if (!block) return '';
@@ -624,7 +706,7 @@ footer a{color:var(--accent)}
     if (!attSummary){ el.innerHTML = '<p class="empty">Couldn’t load attendance.</p>'; return; }
     const n = rollNum();
     if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your attendance.</p>'; return; }
-    el.innerHTML = '<p class="empty">Loading…</p>';
+    el.innerHTML = skeleton(4);
     fetchOne('attendance', attCache, n).then(s => {
       if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
       if (!s){ el.innerHTML = `<p class="empty">No attendance found for roll ${esc(state.roll)}.</p>`; return; }
@@ -641,12 +723,14 @@ footer a{color:var(--accent)}
       rows += attRow('Theory', s.total_theory, tMin);
       rows += attRow('Practical', s.total_practical, pMin);
       const motiv = attendanceMotivation(s, tMin, pMin);
+      const progress = progressRow('Theory', s.total_theory, tMin) + progressRow('Practical', s.total_practical, pMin);
       el.innerHTML = `
         <h3>${esc(s.name)}</h3>
         <table class="atttbl">
           <thead><tr><th></th><th>Held</th><th>Attd</th><th>%</th><th>Status</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
+        ${progress ? `<div class="progress">${progress}</div>` : ''}
         <p class="avgline">Average <b>${s.avg_pct}%</b> · theory min ${tMin}%, practical min ${pMin}%</p>
         <div class="motiv ${motiv.ok ? 'ok' : 'warn'}"><div class="micon">${motiv.ok ? CHECK : TREND}</div><p>${esc(motiv.text)}</p></div>`;
     });
@@ -677,6 +761,55 @@ footer a{color:var(--accent)}
     el.querySelector('.body').innerHTML = list.map(a =>
       `<div class="note">${a.title ? `<b>${esc(a.title)}</b> — ` : ''}${esc(a.text || '')}${a.date ? `<span class="date">${esc(a.date)}</span>` : ''}</div>`
     ).join('');
+  }
+
+  /* ---- Home: "install this" banner. A PWA install prompt is otherwise invisible - Android/Chrome
+     can offer a native one but only after `beforeinstallprompt` fires (timing is the browser's own
+     call), and iOS Safari never fires it at all, so those users only ever get there via Share ->
+     Add to Home Screen. This shows *something* actionable on first visit either way, dismissible
+     for good (localStorage), and never shown once the site is already running installed. ---- */
+  function initInstallBanner(){
+    const el = $('#installBanner');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const dismissCount = parseInt(store.get('installBannerDismissCount') || '0', 10);
+    /* "Maybe later" only hides it for that visit until it's been dismissed 3 times total,
+       then it stops appearing for good - gives it a few chances to be noticed without
+       becoming permanently annoying. */
+    if (isStandalone || store.get('installBannerDismissed') === '1' || dismissCount >= 3) return;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    let deferredPrompt = null;
+    const setText = (t, showBtn) => { $('#installText').textContent = t; $('#installBtn').hidden = !showBtn; };
+
+    if (isIOS){
+      setText('Tap the Share icon in Safari, then "Add to Home Screen."', false);
+    } else {
+      /* Shown immediately as a safe fallback for any browser that never fires the event
+         (Firefox mobile, in-app browsers, etc.) - upgraded to a real one-tap Install button
+         the moment (and if) the browser actually offers one. */
+      setText('Open your browser menu and choose "Add to Home screen" or "Install app."', false);
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        setText('Add this to your home screen for one-tap access, even with a weak signal.', true);
+      });
+    }
+    el.hidden = false;
+
+    $('#installBtn').addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      el.hidden = true;
+      store.set('installBannerDismissed', '1');
+    });
+    $('#installDismiss').addEventListener('click', () => {
+      el.hidden = true;
+      const n = dismissCount + 1;
+      store.set('installBannerDismissCount', String(n));
+      if (n >= 3) store.set('installBannerDismissed', '1');
+    });
+    window.addEventListener('appinstalled', () => { store.set('installBannerDismissed', '1'); el.hidden = true; });
   }
 
   /* ---- Home: "today strip" - one line combining "next class" and "key dates", whichever
@@ -783,16 +916,21 @@ footer a{color:var(--accent)}
     const hash = location.hash.replace('#', '');
     const view = VIEWS.includes(hash) ? hash : 'home';
     for (const v of VIEWS) $('#view-' + v).hidden = v !== view;
-    if (view === 'timetable') { renderDays(); renderOut(); }
+    /* Guarded so landing directly on a section - a bookmark, a shared link, or simply hitting
+       refresh while on it - shows the loading skeleton until its own fetch settles, instead of
+       crashing (timetable, before weekStart exists) or flashing a false "couldn't load" (mess
+       bill/attendance, before their summary has arrived). */
+    if (view === 'timetable' && state.weekStart) { renderDays(); renderOut(); }
     if (view === 'home') { renderReminder(); renderTodayStrip(); }
-    if (view === 'messbill') renderMessBill();
-    if (view === 'attendance') renderAttendance();
+    if (view === 'messbill' && messReady) renderMessBill();
+    if (view === 'attendance' && attReady) renderAttendance();
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
   route();
 
   renderWelcome();
+  initInstallBanner();
   setInterval(renderTodayStrip, 60000);
 
   fetch('timetable.json', { cache: 'no-store' })
@@ -803,24 +941,24 @@ footer a{color:var(--accent)}
   fetch('messbill.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(d => {
-      messSummary = d;
+      messSummary = d; messReady = true;
       $('#mbTitle').textContent = d.title || 'Mess Bill';
       $('#mbSub').textContent = d.month || '';
       $('#mbUpdated').textContent = d.updated ? 'Updated ' + fmtDate(new Date(d.updated)) : '';
       renderReminder(); renderMessBill();
     })
-    .catch(() => { $('#mbSub').textContent = 'Not uploaded yet'; $('#mbOut').innerHTML = '<p class="empty">Mess bill hasn’t been uploaded yet.</p>'; });
+    .catch(() => { messReady = true; $('#mbSub').textContent = 'Not uploaded yet'; $('#mbOut').innerHTML = '<p class="empty">Mess bill hasn’t been uploaded yet.</p>'; });
 
   fetch('attendance.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(d => {
-      attSummary = d;
+      attSummary = d; attReady = true;
       $('#atTitle').textContent = d.title || 'Attendance';
       $('#atSub').textContent = d.as_of ? 'Till ' + d.as_of : '';
       $('#atUpdated').textContent = [d.term, d.updated ? 'updated ' + fmtDate(new Date(d.updated)) : ''].filter(Boolean).join(' · ');
       renderAttendance();
     })
-    .catch(() => { $('#atSub').textContent = 'Not uploaded yet'; $('#atOut').innerHTML = '<p class="empty">Attendance hasn’t been uploaded yet.</p>'; });
+    .catch(() => { attReady = true; $('#atSub').textContent = 'Not uploaded yet'; $('#atOut').innerHTML = '<p class="empty">Attendance hasn’t been uploaded yet.</p>'; });
 
   fetch('announcements.json', { cache: 'no-store' })
     .then(r => r.ok ? r.json() : [])
@@ -831,6 +969,13 @@ footer a{color:var(--accent)}
     .then(r => r.ok ? r.json() : [])
     .then(loadKeyDates)
     .catch(() => loadKeyDates([]));
+
+  /* Installable + works-offline: registers sw.js, which caches the app shell and falls back to
+     the last successful data load when the network is down. Safe to skip silently if the
+     browser doesn't support it or the file isn't there yet. */
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
 })();
 </script>
 <script data-goatcounter="https://tronnemesis.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
