@@ -50,6 +50,8 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           if [ -f announcements.json ]; then cp announcements.json _site/; else echo "[]" > _site/announcements.json; fi
+          if [ -f keydates.json ]; then cp keydates.json _site/; else echo "[]" > _site/keydates.json; fi
+          if [ -f robots.txt ]; then cp robots.txt _site/; else printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt; fi
           if [ -f timetable.override.json ]; then
             echo "Using timetable.override.json instead of the PDF"
             cp timetable.override.json _site/timetable.json
