@@ -49,6 +49,9 @@ jobs:
           pip install pdfplumber
           mkdir -p _site
           cp index.html _site/
+          cp manifest.json _site/
+          cp sw.js _site/
+          cp icon-192.png icon-512.png apple-touch-icon.png _site/
           if [ -f announcements.json ]; then cp announcements.json _site/; else echo "[]" > _site/announcements.json; fi
           if [ -f keydates.json ]; then cp keydates.json _site/; else echo "[]" > _site/keydates.json; fi
           if [ -f robots.txt ]; then cp robots.txt _site/; else printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt; fi
