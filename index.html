@@ -342,7 +342,7 @@ footer a{color:var(--accent)}
     get(k){ try { return localStorage.getItem(k); } catch { return null; } },
     set(k,v){ try { localStorage.setItem(k,v); } catch {} }
   };
-  const state = { names: {}, weekStart: null, entries: [], holidays: [], keyDates: [], roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
+  const state = { names: {}, weekStart: null, entries: [], holidays: [], keyDates: [], manualAnnouncements: [], roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
   let messSummary = null, attSummary = null;
   let messReady = false, attReady = false; /* true once that summary's fetch has settled, success or fail -
     lets route() tell "hasn't loaded yet" (keep the skeleton) apart from "genuinely failed" (show the error) */
@@ -615,7 +615,7 @@ footer a{color:var(--accent)}
     state.day = todayISO >= iso(state.weekStart) && todayISO <= iso(addDays(state.weekStart, 6)) ? todayName() : 'Monday';
     $('#controls').hidden = false;
     if (state.pdf){ $('#foot').hidden = false; $('#foot').innerHTML = `<a href="${esc(state.pdf)}">Open the original PDF</a>`; }
-    renderWelcome(); renderWeek(); renderTodayStrip();
+    renderWelcome(); renderWeek(); renderTodayStrip(); renderAllAnnouncements();
     setInterval(renderOut, 60000);
   }
 
@@ -753,7 +753,16 @@ footer a{color:var(--accent)}
     $('#messReminder').hidden = true;
   });
 
-  /* ---- Home: announcements (hand-edited announcements.json; hidden entirely if absent/empty) ---- */
+  /* ---- Home: announcements. Two sources merged into one box: hand-edited announcements.json
+     (manual, for anything that isn't in a timetable file) and auto-detected ones pulled straight
+     out of the current week's timetable.json by keyword (e.g. "Internal Assessment" classes,
+     including ones add_clinics resolved to a specific batch during clinics hours). Auto ones need
+     no manual editing at all - they're recomputed fresh from state.entries every time a timetable
+     loads or the roll changes, so the moment next week's timetable replaces this one, an entry
+     that isn't in the new week just stops matching and quietly disappears. A batch-scoped one
+     (rolls other than "All") only shows once a matching roll is typed, same as the rest of the
+     site; a common one (rolls "All"/unspecified) always shows. Add more keywords to
+     ANNOUNCEMENT_KEYWORDS below as needed - each needs no other code change. ---- */
   function renderAnnouncements(list){
     const el = $('#announceBox');
     if (!Array.isArray(list) || !list.length){ el.hidden = true; return; }
@@ -761,6 +770,34 @@ footer a{color:var(--accent)}
     el.querySelector('.body').innerHTML = list.map(a =>
       `<div class="note">${a.title ? `<b>${esc(a.title)}</b> — ` : ''}${esc(a.text || '')}${a.date ? `<span class="date">${esc(a.date)}</span>` : ''}</div>`
     ).join('');
+  }
+  const ANNOUNCEMENT_KEYWORDS = [
+    { re: /internal\s*assessment/i, label: 'Internal Assessment' },
+  ];
+  function autoAnnouncements(){
+    if (!state.weekStart) return [];
+    const seen = new Set(), out = [];
+    for (const day of DAYS){
+      const d = dateOf(day);
+      for (const e of state.entries){
+        if (!applies(e, d) || !rollMatches(e.rolls, state.roll)) continue;
+        const hit = ANNOUNCEMENT_KEYWORDS.find(k => k.re.test(`${e.class || ''} ${e.subject || ''}`));
+        if (!hit) continue;
+        const key = hit.label + '|' + iso(d) + '|' + (e.rolls || '');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          title: hit.label,
+          text: [e.subject && e.subject !== hit.label ? e.subject : null, e.location, e.rolls && !/all/i.test(e.rolls) ? rollLabel(e) : null].filter(Boolean).join(' · '),
+          date: fmtDate(d),
+          _sort: iso(d)
+        });
+      }
+    }
+    return out.sort((a, b) => a._sort < b._sort ? -1 : a._sort > b._sort ? 1 : 0);
+  }
+  function renderAllAnnouncements(){
+    renderAnnouncements([...autoAnnouncements(), ...state.manualAnnouncements]);
   }
 
   /* ---- Home: "install this" banner. A PWA install prompt is otherwise invisible - Android/Chrome
@@ -892,7 +929,7 @@ footer a{color:var(--accent)}
     state.roll = e.target.value.trim();
     store.set('roll', state.roll);
     $('#calMsg').textContent = '';
-    renderWelcome(); renderReminder(); renderTodayStrip(); renderOut();
+    renderWelcome(); renderReminder(); renderTodayStrip(); renderAllAnnouncements(); renderOut();
     /* Debounced: each keystroke would otherwise fetch a different (possibly someone else's)
        roll's file while typing - e.g. "136" briefly fetches roll 1, then 13, then 136. */
     clearTimeout(rollDebounce);
@@ -962,7 +999,7 @@ footer a{color:var(--accent)}
 
   fetch('announcements.json', { cache: 'no-store' })
     .then(r => r.ok ? r.json() : [])
-    .then(renderAnnouncements)
+    .then(list => { state.manualAnnouncements = Array.isArray(list) ? list : []; renderAllAnnouncements(); })
     .catch(() => {});
 
   fetch('keydates.json', { cache: 'no-store' })
