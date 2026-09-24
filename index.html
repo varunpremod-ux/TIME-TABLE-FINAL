@@ -527,7 +527,7 @@ footer a{color:var(--accent)}
     return { s, e, parts };
   }
   const byTime = (a, b) => (a._s ?? 1e9) - (b._s ?? 1e9);
-  const kindOf = c => /lect|theor/i.test(c) ? 'lecture' : /prac|lab|clinic|dissect|skill/i.test(c) ? 'practical' : '';
+  const kindOf = c => /lect|theor/i.test(c) ? 'lecture' : /prac|\blab\b|\bclinics?\b|dissect|skill/i.test(c) ? 'practical' : '';
   const fmtRolls = s => String(s || 'All').replace(/\s*-\s*/g, '–').replace(/(\d+)\s*\+/g, '$1+');
   const hasNums = r => /\d/.test(String(r || ''));
   /* "Batch B, Roll 51–100"; a batch name we couldn't convert shows as "Batch A" */
@@ -544,6 +544,17 @@ footer a{color:var(--accent)}
   /* Two entries share a slot when their times overlap (or, lacking parseable times, match exactly). */
   const sameSlot = (a, b) => a._s == null || b._s == null ? a.time === b.time : a._s < endMin(b) && b._s < endMin(a);
   const splitList = (s, re) => String(s || '').split(re).map(x => x.trim()).filter(Boolean);
+  /* Faculty names split one per line - but a gallantry/distinguished-service award after a name
+     ("Wg Cdr Sandeep Kumar, VSM") stays with that name instead of showing as a second person. */
+  const HONOURS = /^(?:PVSM|AVSM|UYSM|SYSM|YSM|VSM|SM|VM|NM|PVC|MVC|VrC|KC|SC|AVC|ADC)(?:\*{1,2}|\s*\(G\))?$/i;
+  function facultyList(s){
+    const out = [];
+    for (const t of splitList(s, /\s*[,;]\s*|\s+&\s+/)){
+      if (HONOURS.test(t) && out.length && /\s/.test(out[out.length - 1])) out[out.length - 1] += ', ' + t;
+      else out.push(t);
+    }
+    return out;
+  }
   const lines = arr => arr.map(x => `<span class="ln">${esc(x)}</span>`).join('');
   const isAll = e => /^all/i.test(String(e.rolls || 'All').trim());
   /* "IA" (or "I.A.") written as its own word always means Internal Assessment - matched in capitals
@@ -563,7 +574,7 @@ footer a{color:var(--accent)}
     const topic = e.class && !/^(theory|lecture|clinics?|practical|tutorials?)$/i.test(e.class.trim()) ? expandIA(e.class) : '';
     const kind = kindOf(e.class || '');
     const tile = (label, html, wide, plain) => html ? `<div class="tile${wide ? ' wide' : ''}"><span class="tl">${label}</span><div class="tv${plain ? ' plain' : ''}">${html}</div></div>` : '';
-    const fac = splitList(e.faculty, /\s*[,;]\s*|\s+&\s+/);
+    const fac = facultyList(e.faculty);
     const venue = splitList(e.location, /\s*;\s*/);
     let dist = '';
     const same = entriesOn(day).filter(x => sameSlot(x, e));
