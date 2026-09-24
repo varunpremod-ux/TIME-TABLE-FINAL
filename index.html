@@ -21,7 +21,7 @@
   --accent:#0F6B5C; --accent-ink:#FFFFFF; --signal:#E3A008; --signal-ink:#231A00;
   --lecture:#0F6B5C; --practical:#B4531E; --other:#5A5F9E;
   --display:'Bricolage Grotesque',Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --ok:#1F7A3D; --warn:#B4531E;
+  --ok:#1F7A3D; --warn:#B4531E; --danger:#C0362C; --danger-ink:#FFFFFF;
   --shadow:0 1px 2px rgba(18,33,30,.05), 0 6px 16px -8px rgba(18,33,30,.10);
   --shadow-sm:0 1px 2px rgba(18,33,30,.05);
 }
@@ -30,7 +30,7 @@
     --bg:#0D1513; --surface:#15211E; --ink:#E6F0ED; --muted:#93A6A0; --line:#263630;
     --accent:#4FC3AC; --accent-ink:#06211B; --signal:#F2B93B;
     --lecture:#4FC3AC; --practical:#F0894F; --other:#9AA0E8;
-    --ok:#5FD087; --warn:#F0894F;
+    --ok:#5FD087; --warn:#F0894F; --danger:#F2766B; --danger-ink:#2A0905;
     --shadow:0 1px 0 rgba(255,255,255,.02), 0 10px 24px -10px rgba(0,0,0,.5);
     --shadow-sm:0 1px 0 rgba(255,255,255,.02);
   }
@@ -85,6 +85,27 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 @keyframes stripIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 @keyframes stripPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
 @media (prefers-reduced-motion:reduce){.strip{animation:none}.strip .dot{animation:none}}
+
+/* Important notice: internal assessments (IA) pulled from this week's timetable, pinned above
+   everything else on Home in a red card, tap for full details. */
+.ianotice{margin:0 0 14px;border-radius:18px;overflow:hidden;border:1.5px solid color-mix(in srgb,var(--danger) 55%,var(--line));background:color-mix(in srgb,var(--danger) 8%,var(--surface));box-shadow:var(--shadow);animation:stripIn .4s cubic-bezier(.2,.8,.3,1) both}
+.ianotice .ihead{display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--danger);color:var(--danger-ink);font:800 12px Figtree,sans-serif;letter-spacing:.09em;text-transform:uppercase}
+.ianotice .ihead svg{width:16px;height:16px;flex:0 0 auto}
+.ianotice .ihead .dot{width:7px;height:7px;margin-left:auto;border-radius:50%;background:currentColor;animation:stripPulse 1.6s ease-in-out infinite}
+.ianotice .iitem{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ianotice .iitem:active{background:color-mix(in srgb,var(--danger) 12%,var(--surface))}
+.ianotice .iitem+.iitem,.ianotice .iitem+.ihint{border-top:1px solid color-mix(in srgb,var(--danger) 25%,var(--line))}
+.ianotice .ibody{flex:1;min-width:0}
+.ianotice .ititle{display:block;font:800 18px/1.25 var(--display);color:var(--ink);letter-spacing:-.005em}
+.ianotice .isub{display:block;margin-top:3px;font:500 14px/1.4 Figtree,sans-serif;color:var(--muted)}
+.ianotice .iwhen{display:inline-block;margin-top:7px;padding:2px 10px;border-radius:999px;background:var(--danger);color:var(--danger-ink);font:700 12px Figtree,sans-serif}
+.ianotice .iwhen.later{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.ianotice .ichev{flex:0 0 auto;color:var(--muted);display:flex}
+.ianotice .ichev svg{width:18px;height:18px}
+.ianotice .ihint{padding:12px 16px;font:500 14.5px/1.45 Figtree,sans-serif;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.ianotice{animation:none}.ianotice .ihead .dot{animation:none}}
+.flag.ia{background:var(--danger);color:var(--danger-ink)}
+.card2.ia{--kind:var(--danger);background:color-mix(in srgb,var(--danger) 6%,var(--surface))}
 
 .announce{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm)}
 .announce .aicon{flex:0 0 auto;width:36px;height:36px;border-radius:11px;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center}
@@ -283,6 +304,8 @@ footer a{color:var(--accent)}
       <input id="roll" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="27">
     </div>
     <p class="welcome" id="welcome" hidden></p>
+
+    <div class="ianotice" id="iaNotice" role="region" aria-label="Important notice" hidden></div>
 
     <div class="strip" id="todayStrip" hidden>
       <div class="icon" id="stripIcon"></div>
@@ -520,6 +543,12 @@ footer a{color:var(--accent)}
   const splitList = (s, re) => String(s || '').split(re).map(x => x.trim()).filter(Boolean);
   const lines = arr => arr.map(x => `<span class="ln">${esc(x)}</span>`).join('');
   const isAll = e => /^all/i.test(String(e.rolls || 'All').trim());
+  /* "IA" (or "I.A.") written as its own word always means Internal Assessment - matched in capitals
+     only, so it can't fire inside ordinary words (anaemia, dyspepsia...). */
+  const IA_RE = /(^|[^A-Za-z])(?:IA|I\.A\.?)(?![A-Za-z])/;
+  const IA_WORDS = /\bint(?:ernal|\.)?\s*assess?e?ments?\b/i;
+  const isIA = e => IA_WORDS.test(`${e.class || ''} ${e.subject || ''}`) || IA_RE.test(`${e.class || ''} ${e.subject || ''}`);
+  const expandIA = t => String(t || '').replace(new RegExp(IA_RE.source, 'g'), '$1Internal Assessment');
   function distRolls(x){
     const r = String(x.rolls || 'All').trim();
     if (/^all/i.test(r)) return 'Everyone';
@@ -528,7 +557,7 @@ footer a{color:var(--accent)}
   }
   function sheetHTML(e, day){
     const time = (e.parts || []).filter(Boolean).join(' – ');
-    const topic = e.class && !/^(theory|lecture|clinics?|practical|tutorials?)$/i.test(e.class.trim()) ? e.class : '';
+    const topic = e.class && !/^(theory|lecture|clinics?|practical|tutorials?)$/i.test(e.class.trim()) ? expandIA(e.class) : '';
     const kind = kindOf(e.class || '');
     const tile = (label, html, wide, plain) => html ? `<div class="tile${wide ? ' wide' : ''}"><span class="tl">${label}</span><div class="tv${plain ? ' plain' : ''}">${html}</div></div>` : '';
     const fac = splitList(e.faculty, /\s*[,;]\s*|\s+&\s+/);
@@ -537,7 +566,7 @@ footer a{color:var(--accent)}
     const same = entriesOn(day).filter(x => sameSlot(x, e));
     if (same.length > 1){
       dist = '<ul class="dist">' + same.map(x =>
-        `<li class="${state.roll && rollMatches(x.rolls, state.roll) ? 'mine' : ''}"><span class="r">${distRolls(x)}</span><span><b>${esc(x.subject)}</b>${x.class ? `<small>${esc(x.class)}</small>` : ''}${x.location ? `<small>${esc(x.location)}</small>` : ''}</span></li>`
+        `<li class="${state.roll && rollMatches(x.rolls, state.roll) ? 'mine' : ''}"><span class="r">${distRolls(x)}</span><span><b>${esc(x.subject)}</b>${x.class ? `<small>${esc(expandIA(x.class))}</small>` : ''}${x.location ? `<small>${esc(x.location)}</small>` : ''}</span></li>`
       ).join('') + '</ul>';
     } else if (isAll(e)) dist = 'The whole batch together';
     return `<span class="eyebrow">${esc(topic ? 'Session topic' : (e.class || (kind ? kind[0].toUpperCase() + kind.slice(1) : 'Class')))}</span>
@@ -652,12 +681,12 @@ footer a{color:var(--accent)}
         const kind = kindOf(e.class);
         const kindIcon = kind === 'lecture' ? LECTURE_ICON : kind === 'practical' ? PRACTICAL_ICON : '';
         const k = entryKey(day, e); tapTargets.set(k, { e, day });
-        return `<article class="card2 ${kind}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}" data-key="${esc(k)}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(e.subject)} details">
+        return `<article class="card2 ${kind}${isIA(e) ? ' ia' : ''}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}" data-key="${esc(k)}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(e.subject)} details">
           <div class="t"><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div>
           <div>
-            <h3>${esc(e.subject)}${flag}</h3>
+            <h3>${esc(e.subject)}${isIA(e) ? '<span class="flag ia">Important</span>' : ''}${flag}</h3>
             <p class="meta">
-              ${e.class ? `<span class="kind">${kindIcon}${esc(e.class)}</span>` : ''}
+              ${e.class ? `<span class="kind">${kindIcon}${esc(expandIA(e.class))}</span>` : ''}
               ${e.location ? `<span>${PIN}${esc(e.location)}</span>` : ''}
               <span>${esc(rollLabel(e))}</span>
             </p>
@@ -677,7 +706,7 @@ footer a{color:var(--accent)}
       return `<div class="slot"><h3>${esc(p.join(' – '))}</h3><ul>` + list.map(e =>
         `<li class="${[state.roll && rollMatches(e.rolls, state.roll) ? 'mine' : '', isOver(e) ? 'past' : ''].join(' ').trim()}" data-key="${esc(entryKey(day, e))}" role="button" tabindex="0" aria-haspopup="dialog">${(tapTargets.set(entryKey(day, e), { e, day }), '')}
           <span class="rolls">${esc(hasNums(e.rolls) || /^all/i.test(e.rolls || 'All') ? fmtRolls(e.rolls) : rollLabel(e))}${e.batch ? `<small>Batch ${esc(e.batch)}</small>` : ''}</span>
-          <span class="what"><b>${esc(e.subject)}</b>${e.class ? `<small>${esc(e.class)}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}${rangeOf(e) ? `<small>${esc(rangeOf(e))}</small>` : ''}</span>
+          <span class="what"><b>${esc(e.subject)}</b>${isIA(e) ? ' <span class="flag ia">IA</span>' : ''}${e.class ? `<small>${esc(expandIA(e.class))}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}${rangeOf(e) ? `<small>${esc(rangeOf(e))}</small>` : ''}</span>
           <span class="loc">${esc(e.location)}</span>
         </li>`).join('') + '</ul></div>';
     }).join('');
@@ -907,7 +936,8 @@ footer a{color:var(--accent)}
         "rolls": "39-76" (only those rolls see it) and "until": "YYYY-MM-DD" (hidden after that
         day). An ISO "date" is shown formatted with the year. Old items keep working as-is. ---- */
   const ANNOUNCEMENT_KEYWORDS = [
-    { re: /\bint(?:ernal|\.)?\s*assess?e?ments?\b/i, label: 'Internal Assessment' },
+    { re: IA_WORDS, label: 'Internal Assessment' },
+    { re: IA_RE, label: 'Internal Assessment' },
   ];
   /* Every keyword match in the shown week that isn't over yet, whoever it's for. */
   function assessmentMatches(){
@@ -921,7 +951,7 @@ footer a{color:var(--accent)}
         const hit = ANNOUNCEMENT_KEYWORDS.find(w => w.re.test(`${e.class || ''} ${e.subject || ''}`));
         if (!hit) continue;
         if (k === todayISO && endMin(e) != null && nowMin >= endMin(e)) continue; /* already finished today */
-        const key = [hit.label, k, e.subject, e.rolls].join('|');
+        const key = [hit.label, k, e.subject, e.rolls, e.time].join('|');
         if (seen.has(key)) continue;
         seen.add(key);
         out.push({ hit, e, day, d, common: rollMatches(e.rolls, '') });
@@ -935,14 +965,42 @@ footer a{color:var(--accent)}
     const n = daysUntil(d);
     return n === 0 ? '<span class="when">Today</span>' : n === 1 ? '<span class="when">Tomorrow</span>' : `<span class="when later">In ${n} days</span>`;
   }
+  const ALERT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8L15 14H1L8 1.8z"/><path d="M8 6.2v3.6"/><circle cx="8" cy="11.9" r=".5" fill="currentColor"/></svg>';
+  let iaShown = [];
+  /* The red "Important notice" card: every IA this viewer should see, soonest first. */
+  function renderIANotice(){
+    const el = $('#iaNotice');
+    iaShown = myAssessments();
+    const waiting = !state.roll && assessmentMatches().some(m => !m.common);
+    if (!iaShown.length && !waiting){ el.hidden = true; el.innerHTML = ''; return; }
+    const urgent = iaShown.some(m => daysUntil(m.d) <= 1);
+    const items = iaShown.map((m, i) => {
+      const n = daysUntil(m.d);
+      const when = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`;
+      const time = (m.e.parts || []).filter(Boolean).join(' – ');
+      const sub = [m.day.slice(0, 3) + ', ' + fmtDate(m.d), time, m.e.location, m.common ? '' : rollLabel(m.e) + ' only'].filter(Boolean).join(' · ');
+      return `<div class="iitem" role="button" tabindex="0" aria-haspopup="dialog" data-ia="${i}">
+        <div class="ibody"><span class="ititle">Internal Assessment${m.e.subject && !isIA({ subject: m.e.subject }) ? ' · ' + esc(m.e.subject) : ''}</span>
+        <span class="isub">${esc(sub)}</span><span class="iwhen${n > 1 ? ' later' : ''}">${when}</span></div>
+        <span class="ichev">${CHEVRON}</span></div>`;
+    }).join('');
+    const hint = waiting ? '<p class="ihint">One batch has an Internal Assessment (IA) this week. Type your roll no. to see if it’s yours.</p>' : '';
+    el.innerHTML = `<div class="ihead">${ALERT}Important notice${urgent ? '<span class="dot"></span>' : ''}</div>` + items + hint;
+    el.hidden = false;
+  }
+  $('#iaNotice').addEventListener('click', ev => {
+    const it = ev.target.closest('[data-ia]'); if (!it) return;
+    const m = iaShown[+it.dataset.ia]; if (m) openSheet(m.e, m.day);
+  });
+  $('#iaNotice').addEventListener('keydown', ev => {
+    if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target.matches('[data-ia]')) return;
+    ev.preventDefault(); const m = iaShown[+ev.target.dataset.ia]; if (m) openSheet(m.e, m.day);
+  });
+  /* Announcements box: the hand-edited announcements.json items. (IA now has its own notice.) */
   function renderAllAnnouncements(){
+    renderIANotice();
     const el = $('#announceBox');
     const todayISO = iso(new Date());
-    const auto = myAssessments().map(m => {
-      const time = (m.e.parts || []).filter(Boolean).join(' – ');
-      const bits = [m.e.subject && !m.hit.re.test(m.e.subject) ? m.e.subject : '', m.e.location, m.common ? '' : rollLabel(m.e)].filter(Boolean);
-      return `<div class="note"><b>${esc(m.hit.label)}</b>${bits.length ? ' — ' + esc(bits.join(' · ')) : ''}<span class="date">${esc(m.day.slice(0, 3) + ', ' + fmtDate(m.d) + (time ? ' · ' + time : ''))}${whenChip(m.d)}</span></div>`;
-    });
     const manual = (state.manualAnnouncements || [])
       .filter(a => a && (a.title || a.text))
       .filter(a => !a.until || String(a.until) >= todayISO)
@@ -951,10 +1009,7 @@ footer a{color:var(--accent)}
         const date = /^\d{4}-\d{2}-\d{2}$/.test(String(a.date || '')) ? fmtISO(a.date) : a.date;
         return `<div class="note">${a.title ? `<b>${esc(a.title)}</b>${a.text ? ' — ' : ''}` : ''}${esc(a.text || '')}${date ? `<span class="date">${esc(date)}</span>` : ''}</div>`;
       });
-    /* Before a roll is typed, say so if a batch-only announcement is waiting, instead of hiding it silently. */
-    const waiting = !state.roll && assessmentMatches().some(m => !m.common);
-    const hint = waiting ? '<p class="hint">One batch has an internal assessment this week. Type your roll no. to see if it’s yours.</p>' : '';
-    const html = auto.join('') + manual.join('') + hint;
+    const html = manual.join('');
     el.hidden = !html;
     el.querySelector('.body').innerHTML = html;
   }
@@ -1024,7 +1079,6 @@ footer a{color:var(--accent)}
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const upcoming = (state.keyDates || [])
       .map(k => ({ ...k, d: parseISODateOnly(k.date) }))
-      .concat(myAssessments().map(m => ({ title: m.hit.label + (m.e.subject && !m.hit.re.test(m.e.subject) ? ' · ' + m.e.subject : ''), d: m.d, entry: m.e, day: m.day })))
       .filter(k => k.d && k.d >= now)
       .sort((a, b) => a.d - b.d);
     return upcoming[0] || null;
