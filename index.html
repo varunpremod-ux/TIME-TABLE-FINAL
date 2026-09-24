@@ -102,6 +102,9 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .ianotice .iwhen.later{background:transparent;color:var(--danger);border:1px solid var(--danger)}
 .ianotice .ichev{flex:0 0 auto;color:var(--muted);display:flex}
 .ianotice .ichev svg{width:18px;height:18px}
+.ianotice .iwish{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:9px 11px;border-radius:12px;background:color-mix(in srgb,var(--accent) 11%,var(--surface));color:var(--ink);font:500 italic 14px/1.45 Figtree,sans-serif}
+.ianotice .iwish b{font-style:normal;font-weight:700}
+.ianotice .iwish svg{flex:0 0 auto;width:16px;height:16px;margin-top:2px;color:var(--signal)}
 .ianotice .ihint{padding:12px 16px;font:500 14.5px/1.45 Figtree,sans-serif;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){.ianotice{animation:none}.ianotice .ihead .dot{animation:none}}
 .flag.ia{background:var(--danger);color:var(--danger-ink)}
@@ -967,6 +970,100 @@ footer a{color:var(--accent)}
   }
   const ALERT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8L15 14H1L8 1.8z"/><path d="M8 6.2v3.6"/><circle cx="8" cy="11.9" r=".5" fill="currentColor"/></svg>';
   let iaShown = [];
+  /* A little good-luck line on the IA notice the day before and on the day itself. Picked from a
+     subject-specific set when there is one, else the general set, and fixed per IA (not reshuffled
+     on every refresh). */
+  const STAR = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.2l1.6 4.2 4.2 1.6-4.2 1.6L8 12.8 6.4 8.6 2.2 7l4.2-1.6z"/><path d="M13 10.6l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" opacity=".7"/></svg>';
+  /* Per-subject lines, so the wish is about *this* exam. {time} = start time, {venue} = venue,
+     {subj} = subject as written in the timetable. Two per subject/moment; one is picked per IA and
+     kept for the day. Anything not listed falls back to the last entry. */
+  const WISHES = [
+    { re: /\bpaed|\bpediat/i,
+      eve: ['Plot your prep on the growth chart: 100th percentile. Now nap time, doctor’s orders.',
+            'Tonight’s prescription: warm milk, early bedtime and zero night feeds of revision.'],
+      day: ['Crawl, walk, run, ace it. Every milestone right on schedule by {time}.',
+            'Be as calm as a well-fed baby. You were born ready for this one.'] },
+    { re: /obst|gyn|obg/i,
+      eve: ['Your prep has reached full term. Rest tonight; delivery is at {time} in {venue}.',
+            'You know every stage of labour. Tonight’s stage is sleep.'],
+      day: ['Due date is here. Go deliver, {time} sharp.',
+            'Engaged, well-positioned and ready. Smooth delivery at {venue}!'] },
+    { re: /surg/i,
+      eve: ['Pre-op orders: consent to a good night’s sleep, and nil panic after midnight.',
+            'Instruments counted, answers sharpened. Scrub in rested tomorrow.'],
+      day: ['Scrubbed, gowned, gloved. Clean incision into every question, neat closure at the end.',
+            'Steady hands, steady mind. Cut straight to the right answer.'] },
+    { re: /ophth/i,
+      eve: ['Your vision for tomorrow: 6/6. Now close both eyes, that’s the whole treatment.',
+            'Everything’s in focus. Rest those eyes tonight.'],
+      day: ['Eyes on the prize, and on the fundus. All the best!',
+            'Clear lens, sharp focus, 20/20 answers.'] },
+    { re: /\bent\b|otorhino|\bear\b/i,
+      eve: ['Ears open, nose in the book, and now straight to bed. No snoring allowed.',
+            'You’ve heard it all this posting. Tonight, just listen to your pillow.'],
+      day: ['Hear the question out fully, then nose ahead.',
+            'Lend them your ears; they’ll be impressed.'] },
+    { re: /ortho/i,
+      eve: ['Your knowledge is well set and fully united. Don’t fracture your sleep over it.',
+            'Strong foundation, no displacement. Rest up.'],
+      day: ['Stand tall, you’ve got the backbone for this.',
+            'Solid union, full range of motion. Go ace it.'] },
+    { re: /psych/i,
+      eve: ['Mood: euthymic. Insight: grade 6. Plan: sleep early.',
+            'No need to ruminate tonight. You’ve got this.'],
+      day: ['Calm, oriented and fully insightful. The question paper is the anxious one today.',
+            'Stay grounded. Your judgement is intact.'] },
+    { re: /derm/i,
+      eve: ['Don’t let it get under your skin. Beauty sleep tonight.',
+            'Clear plan, no flare-ups. Rest easy.'],
+      day: ['Keep it smooth, no rash decisions.',
+            'Thick-skinned and ready. All the best!'] },
+    { re: /radio/i,
+      eve: ['We can see right through your nerves, and there’s nothing there. Rest up.',
+            'No shadows of doubt on this film. Sleep well.'],
+      day: ['Look at the whole film before you answer. You’ll spot it.',
+            'Crystal-clear views today. Go ace it.'] },
+    { re: /anaes|anes/i,
+      eve: ['Induce sleep early tonight, wake up fully reversed and ready.',
+            'Pre-medicate with rest. You’re well prepared.'],
+      day: ['Stable vitals, well-titrated answers. Smooth recovery guaranteed.',
+            'Secure the airway, then secure the marks.'] },
+    { re: /commun|psm|preventive|social/i,
+      eve: ['Primary prevention of a bad day: sleep early.',
+            'Your preparedness has 100% coverage. Rest up.'],
+      day: ['100% sensitivity, 100% specificity. Go get it.',
+            'Herd immunity to tough questions: achieved.'] },
+    { re: /forens|fmt/i,
+      eve: ['Inquest findings: well prepared, no foul play. Case closed, go to sleep.',
+            'Every clue collected. Rest up, detective.'],
+      day: ['Examine every question like evidence. Nothing gets past you.',
+            'Cause of success: preparation. Manner: natural.'] },
+    { re: /medicine/i,
+      eve: ['Chief complaint: nerves. Duration: one night. Treatment: sleep. Prognosis: excellent.',
+            'History taken, examination done. Tonight is just rest.'],
+      day: ['Inspect, palpate, percuss, auscultate, then ace it.',
+            'Take a good history of each question before you jump to the diagnosis.'] },
+    { re: /./,
+      eve: ['{subj} IA tomorrow at {time}. The only thing left to review tonight is your pillow.',
+            'You’ve done the reading. Now let your brain do the filing: sleep early.'],
+      day: ['{subj} IA today at {time}. Walk in like it’s your favourite ward round.',
+            'Read the question twice, answer once. You’ve got this.'] }
+  ];
+  function wishFor(m, n){
+    const subj = String(m.e.subject || '');
+    const w = WISHES.find(x => x.re.test(subj));
+    const pool = w[n === 0 ? 'day' : 'eve'];
+    let h = 0; for (const c of subj + iso(m.d)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const venue = String(m.e.location || '').split(/\s*;\s*/)[0] || 'the venue';
+    const time = (m.e.parts || [])[0] || 'the start';
+    return pool[h % pool.length].replace(/\{time\}/g, time).replace(/\{venue\}/g, venue).replace(/\{subj\}/g, subj || 'Your');
+  }
+  /* "All the best, Prince!" - the typed roll's first name when we have it. */
+  function bestWishes(n){
+    const r = rollNum();
+    const first = Number.isNaN(r) ? '' : String(state.names[String(r)] || '').trim().split(/\s+/)[0];
+    return (n === 0 ? 'Today’s the day' : 'All the best') + (first ? ', ' + first : '') + '!';
+  }
   /* The red "Important notice" card: every IA this viewer should see, soonest first. */
   function renderIANotice(){
     const el = $('#iaNotice');
@@ -983,7 +1080,7 @@ footer a{color:var(--accent)}
       const sub = [m.day.slice(0, 3) + ', ' + fmtDate(m.d), time, m.e.location, m.common ? '' : rollLabel(m.e) + ' only'].filter(Boolean).join(' · ');
       return `<div class="iitem" role="button" tabindex="0" aria-haspopup="dialog" data-ia="${i}">
         <div class="ibody"><span class="ititle">Internal Assessment${m.e.subject && !isIA({ subject: m.e.subject }) ? ' · ' + esc(m.e.subject) : ''}</span>
-        <span class="isub">${esc(sub)}</span><span class="iwhen${n > 1 ? ' later' : ''}">${when}</span></div>
+        <span class="isub">${esc(sub)}</span><span class="iwhen${n > 1 ? ' later' : ''}">${when}</span>${n <= 1 ? `<span class="iwish">${STAR}<span><b>${esc(bestWishes(n))}</b> ${esc(wishFor(m, n))}</span></span>` : ''}</div>
         <span class="ichev">${CHEVRON}</span></div>`;
     }).join('');
     let hint = '';
