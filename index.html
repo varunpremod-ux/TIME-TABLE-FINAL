@@ -971,8 +971,10 @@ footer a{color:var(--accent)}
   function renderIANotice(){
     const el = $('#iaNotice');
     iaShown = myAssessments();
-    const waiting = !state.roll && assessmentMatches().some(m => !m.common);
-    if (!iaShown.length && !waiting){ el.hidden = true; el.innerHTML = ''; return; }
+    /* Before a roll is typed: name every batch-only IA this week (which batch, subject, day) rather
+       than hiding them, so nobody has to guess whether it's theirs. */
+    const waiting = state.roll ? [] : assessmentMatches().filter(m => !m.common);
+    if (!iaShown.length && !waiting.length){ el.hidden = true; el.innerHTML = ''; return; }
     const urgent = iaShown.some(m => daysUntil(m.d) <= 1);
     const items = iaShown.map((m, i) => {
       const n = daysUntil(m.d);
@@ -984,7 +986,14 @@ footer a{color:var(--accent)}
         <span class="isub">${esc(sub)}</span><span class="iwhen${n > 1 ? ' later' : ''}">${when}</span></div>
         <span class="ichev">${CHEVRON}</span></div>`;
     }).join('');
-    const hint = waiting ? '<p class="ihint">One batch has an Internal Assessment (IA) this week. Type your roll no. to see if it’s yours.</p>' : '';
+    let hint = '';
+    if (waiting.length){
+      const who = m => (m.e.batch ? 'Batch ' + m.e.batch : rollLabel(m.e)) + ' – ' + m.e.subject + ' (' + m.day.slice(0, 3) + ', ' + fmtDate(m.d) + ')';
+      const batches = new Set(waiting.map(m => m.e.rolls)).size;
+      const list = waiting.map(who);
+      const joined = list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1] : list[0];
+      hint = `<p class="ihint">${batches === 1 ? 'One batch has' : batches + ' batches have'} an Internal Assessment (IA) this week: ${esc(joined)}. Type your roll no. to see yours.</p>`;
+    }
     el.innerHTML = `<div class="ihead">${ALERT}Important notice${urgent ? '<span class="dot"></span>' : ''}</div>` + items + hint;
     el.hidden = false;
   }
