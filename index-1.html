@@ -1,0 +1,1203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Jaegers Hub</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F6B5C">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jaegers Hub">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F5F4; --surface:#FFFFFF; --ink:#12211E; --muted:#56665F; --line:#D3DDDA;
+  --accent:#0F6B5C; --accent-ink:#FFFFFF; --signal:#E3A008; --signal-ink:#231A00;
+  --lecture:#0F6B5C; --practical:#B4531E; --other:#5A5F9E;
+  --display:'Bricolage Grotesque',Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --ok:#1F7A3D; --warn:#B4531E;
+  --shadow:0 1px 2px rgba(18,33,30,.05), 0 6px 16px -8px rgba(18,33,30,.10);
+  --shadow-sm:0 1px 2px rgba(18,33,30,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0D1513; --surface:#15211E; --ink:#E6F0ED; --muted:#93A6A0; --line:#263630;
+    --accent:#4FC3AC; --accent-ink:#06211B; --signal:#F2B93B;
+    --lecture:#4FC3AC; --practical:#F0894F; --other:#9AA0E8;
+    --ok:#5FD087; --warn:#F0894F;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 10px 24px -10px rgba(0,0,0,.5);
+    --shadow-sm:0 1px 0 rgba(255,255,255,.02);
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg) radial-gradient(1100px 520px at 50% -80px,color-mix(in srgb,var(--accent) 7%,transparent),transparent 70%) fixed;color:var(--ink);font:16px/1.5 Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px 72px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
+.sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+.back{display:inline-block;margin:0 0 16px;color:var(--muted);font:600 14px Figtree,system-ui,sans-serif;text-decoration:none}
+.back:hover{color:var(--ink)}
+
+.roll{display:flex;align-items:center;gap:12px;margin:22px 0 14px;padding:10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm)}
+.roll:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.roll label{font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap}
+.roll input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);outline:none;text-align:right;font:800 30px/1.2 var(--display);letter-spacing:-.01em}
+.roll input::placeholder{color:var(--line)}
+
+.welcome{margin:-6px 4px 18px;font:800 20px/1.2 var(--display);letter-spacing:-.01em;color:var(--accent)}
+
+.banner{display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;padding:14px 16px;background:#FFF6E0;border:1px solid #EFD48A;border-radius:14px;box-shadow:var(--shadow-sm)}
+.banner .icon{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center;font:800 14px var(--display)}
+.banner .icon svg{width:14px;height:14px}
+.banner .txt{flex:1;font-size:15px;line-height:1.4;color:#231A00}
+.banner .txt b{display:block;font:700 15.5px/1.3 Figtree,sans-serif;margin-bottom:3px}
+.banner button{margin-top:9px;margin-right:8px;border:1px solid var(--signal);background:transparent;color:#8a5a00;font:700 13.5px Figtree,sans-serif;padding:7px 13px;border-radius:999px;cursor:pointer}
+.banner.install{background:color-mix(in srgb,var(--accent) 9%,var(--surface));border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.banner.install .icon{background:var(--accent);color:var(--accent-ink)}
+.banner.install .txt{color:var(--ink)}
+.banner.install .txt b{color:var(--ink)}
+.banner.install button{border-color:var(--accent);color:var(--accent)}
+.banner.install button#installBtn{background:var(--accent);color:var(--accent-ink)}
+
+.strip{--tint:var(--accent);--tint-ink:var(--accent-ink);position:relative;display:flex;align-items:center;gap:13px;margin:0 0 14px;padding:13px 16px;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:stripIn .4s cubic-bezier(.2,.8,.3,1) both}
+.strip::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,color-mix(in srgb,var(--tint) 16%,transparent),transparent 65%);pointer-events:none}
+.strip.next{--tint:var(--muted);--tint-ink:var(--surface)}
+.strip.date{--tint:var(--signal);--tint-ink:var(--signal-ink)}
+.strip .icon{position:relative;flex:0 0 auto;width:46px;height:46px;border-radius:14px;background:var(--tint);color:var(--tint-ink);display:flex;align-items:center;justify-content:center}
+.strip .icon svg{width:23px;height:23px}
+.strip .body{position:relative;flex:1;min-width:0}
+.strip .tag{display:flex;align-items:center;gap:5px;font:700 11.5px Figtree,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--tint)}
+.strip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:stripPulse 1.6s ease-in-out infinite}
+.strip .txt{display:block;margin-top:3px;font:800 18px/1.28 var(--display);color:var(--ink);letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip .txt .sub{display:block;margin-top:2px;font:500 13.5px Figtree,sans-serif;color:var(--muted);white-space:normal}
+.strip.tappable{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.strip.tappable:active{transform:scale(.98)}
+.strip .schev{position:relative;flex:0 0 auto;color:var(--muted);display:flex}
+.strip .schev svg{width:18px;height:18px}
+@keyframes stripIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+@keyframes stripPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){.strip{animation:none}.strip .dot{animation:none}}
+
+.announce{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm)}
+.announce .aicon{flex:0 0 auto;width:36px;height:36px;border-radius:11px;background:var(--signal);color:var(--signal-ink);display:flex;align-items:center;justify-content:center}
+.announce .aicon svg{width:18px;height:18px}
+.announce .content{flex:1;min-width:0}
+.announce b.lbl{display:block;font:700 12.5px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.announce .note{font-size:15px}
+.announce .note+.note{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+.announce .note b{display:inline;font:700 14px Figtree,system-ui,sans-serif;color:var(--ink)}
+.announce .note .date{display:block;margin-top:3px;color:var(--muted);font-size:13px}
+.announce .note .when{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--signal);color:var(--signal-ink);font:700 11.5px Figtree,sans-serif;vertical-align:1px}
+.announce .note .when.later{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.announce .hint{font-size:14px;color:var(--muted)}
+.announce .note+.hint{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
+.card:active{transform:scale(.98);box-shadow:var(--shadow-sm)}
+.card .cicon{flex:0 0 auto;width:50px;height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:var(--surface)}
+.card .cicon svg{width:25px;height:25px}
+.card.tt .cicon{background:var(--lecture)}
+.card.mb .cicon{background:var(--practical)}
+.card.at .cicon{background:var(--other)}
+.card .left{flex:1;min-width:0}
+.card .left h2{font-size:22px;font-weight:800}
+.card .left p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.card .chev{color:var(--muted);font-size:22px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--line);border-radius:12px}
+.seg button{border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+
+.days{display:flex;gap:8px;overflow-x:auto;margin:14px -16px 0;padding:2px 16px 8px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.days button{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.15;flex:0 0 auto;border:1px solid var(--line);border-radius:14px;padding:7px 14px;background:var(--surface);color:var(--ink);font:600 14px Figtree,system-ui,sans-serif;cursor:pointer}
+.days button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.days button small{font:500 12px Figtree,system-ui,sans-serif;opacity:.8}
+.days button.today::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--signal)}
+.weeknote{margin:16px 2px 0;font-size:15px;color:var(--muted)}
+.weeknote b{color:var(--ink);font-weight:600}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.head{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 0}
+.head h2{font-size:24px;font-weight:800;letter-spacing:-.01em}
+.head p{margin:0;color:var(--muted);font-size:14px}
+
+.card2{--kind:var(--other);display:grid;grid-template-columns:64px 1fr;gap:14px;margin-top:10px;padding:14px 14px 14px 12px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--kind);border-radius:12px;box-shadow:var(--shadow-sm);transition:box-shadow .2s ease}
+.card2.lecture{--kind:var(--lecture)}
+.card2.practical{--kind:var(--practical)}
+.card2.now{outline:2px solid var(--signal);outline-offset:2px}
+.t{font-variant-numeric:tabular-nums}
+.t b{display:block;font:800 21px/1.15 var(--display)}
+.t span{display:block;margin-top:2px;color:var(--muted);font-size:13.5px}
+.card2 h3{font-size:21px;font-weight:600;letter-spacing:-.005em}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font-size:14.5px;color:var(--muted)}
+.meta .kind{font-weight:600;color:var(--kind)}
+.meta svg{width:14px;height:14px;margin-right:4px;vertical-align:-1px}
+.flag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--signal);color:var(--signal-ink);font:600 12px Figtree,system-ui,sans-serif;vertical-align:3px}
+.flag.next{background:transparent;color:var(--muted);border:1px solid var(--line)}
+
+.slot{margin-top:20px}
+.slot h3{font-size:16px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.slot ul{list-style:none;margin:8px 0 0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.slot li{display:grid;grid-template-columns:92px 1fr minmax(0,38%);gap:12px;align-items:center;padding:12px 14px}
+.slot li+li{border-top:1px solid var(--line)}
+.slot li.mine{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
+.rolls{font:800 17px/1.2 var(--display);font-variant-numeric:tabular-nums}
+.what b{display:block;font-weight:600}
+.rolls small{display:block;margin-top:2px;font:500 12px Figtree,system-ui,sans-serif;color:var(--muted)}
+.what small{display:block;color:var(--muted);font-size:13px}
+.loc{color:var(--muted);font-size:14px;text-align:right}
+
+.days button.off:not([aria-pressed=true]){color:var(--muted)}
+.holiday{margin-top:12px;padding:36px 18px;text-align:center;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--signal);border-radius:12px;box-shadow:var(--shadow-sm)}
+.holiday h3{font:800 36px/1.1 var(--display);letter-spacing:-.02em}
+.holiday p{margin:10px 0 0;color:var(--muted)}
+.card2,.slot li,.holiday{transition:opacity .4s}
+
+/* Class details bottom sheet: tapping a class (My classes card, Roll-wise row, or the Home strip)
+   slides a panel up from the bottom with everything about it - topic, faculty, time, venue,
+   batch, posting dates and who else goes where in that slot. Closes on the button, a tap on
+   the dimmed page, a swipe down, Esc, or the phone's Back button. */
+.card2[data-key],.slot li[data-key]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.card2[data-key]:active,.slot li[data-key]:active{transform:scale(.985)}
+.card2{position:relative;padding-right:36px;transition:opacity .4s,transform .15s ease}
+.card2 .chev2{position:absolute;top:50%;right:12px;transform:translateY(-50%);color:var(--muted);display:flex}
+.card2 .chev2 svg{width:18px;height:18px}
+.slot li{transition:opacity .4s,transform .15s ease}
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(6,14,12,.5);opacity:0;transition:opacity .25s ease}
+.sheet-bg.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:640px;margin:0 auto;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom));background:var(--surface);border-radius:24px 24px 0 0;
+  box-shadow:0 -12px 40px -8px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.3,1)}
+.sheet.show{transform:none}
+.sheet .grab{width:44px;height:5px;margin:4px auto 16px;border-radius:999px;background:var(--line)}
+.sheet .eyebrow{display:block;font:700 12px Figtree,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.sheet h2{margin:6px 0 4px;font:800 26px/1.15 var(--display);letter-spacing:-.015em;color:var(--ink)}
+.sheet .subj{margin:0 0 16px;color:var(--muted);font-size:15px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--ink) 3%,var(--surface))}
+.tile.wide{grid-column:1/-1}
+.tile .tl{display:block;margin-bottom:5px;font:700 11.5px Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .tv{font:700 16.5px/1.35 var(--display);color:var(--ink)}
+.tile .tv .ln{display:block}
+.tile .tv .ln+.ln{margin-top:3px}
+.tile .tv.plain{font:500 15px/1.45 Figtree,sans-serif}
+.tile .tv svg{width:16px;height:16px;margin-right:6px;vertical-align:-2px;color:var(--accent)}
+.sheet-close{display:block;width:100%;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);font:700 15px Figtree,sans-serif;letter-spacing:.04em;cursor:pointer}
+.sheet-close:active{transform:scale(.98)}
+.dist{list-style:none;margin:2px 0 0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.dist li{display:grid;grid-template-columns:minmax(80px,auto) 1fr;gap:10px;align-items:start;padding:9px 11px;font:500 14px/1.35 Figtree,sans-serif}
+.dist li+li{border-top:1px solid var(--line)}
+.dist li.mine{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
+.dist .r{font:800 14px/1.3 var(--display);font-variant-numeric:tabular-nums}
+.dist small{display:block;color:var(--muted);font:500 12.5px/1.35 Figtree,sans-serif}
+.dist b{font-weight:600}
+body.sheet-open{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-bg{transition:none}}
+@media (prefers-reduced-motion:reduce){.details{animation:none}.card2 .chev2,.strip .schev{transition:none}}
+.card2.past,.slot li.past,.holiday.past{opacity:.5;filter:saturate(.55)}
+.days button.past:not([aria-pressed=true]){opacity:.55}
+.notice{margin:12px 0 0;padding:12px 14px;border-radius:10px;border:1px dashed var(--line);background:var(--surface);color:var(--muted);font-size:14px}
+.calbtn{display:block;width:100%;margin-top:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:600 15px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .15s ease}
+.calbtn:active{transform:scale(.98)}
+.calmsg{min-height:1.2em;margin:6px 2px 0;font-size:13px;color:var(--muted)}
+.empty{margin:20px 0;padding:26px 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm);color:var(--muted);text-align:center}
+.empty.small{margin:8px 0;padding:12px;box-shadow:none}
+
+/* Loading skeleton: a soft shimmer standing in for the cards about to appear, instead of a bare
+   "Loading…" line. */
+.skel{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.skel .sk-row{height:60px;border-radius:12px;background:var(--surface);border:1px solid var(--line);background-image:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--ink) 7%,transparent) 50%,transparent 70%);background-size:250% 100%;animation:shimmer 1.5s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel .sk-row{animation:none}}
+.panelhead{margin:0 0 0}
+.panelhead h2{font-size:28px;font-weight:800;letter-spacing:-.01em;font-family:var(--display)}
+.panelhead p.sub{margin:4px 0 0}
+footer{margin-top:36px;color:var(--muted);font-size:14px}
+footer a{color:var(--accent)}
+[hidden]{display:none!important}
+
+/* Mess bill */
+.billgroup{margin-top:20px}
+.billgroup h4{margin:0 0 8px;font:700 13px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.billtbl{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.billtbl td{padding:11px 14px;font-size:15px;border-top:1px solid var(--line)}
+.billtbl tr:first-child td{border-top:0}
+.billtbl td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.billtbl tr.tot td{font-weight:800;background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.grandtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding:16px;background:var(--accent);color:var(--accent-ink);border-radius:12px;font:700 16px Figtree,sans-serif;box-shadow:var(--shadow)}
+.grandtotal b{font:800 26px var(--display)}
+
+/* Attendance */
+.atttbl{width:100%;border-collapse:collapse;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14.5px;box-shadow:var(--shadow-sm)}
+.atttbl th{text-align:left;padding:9px 10px;color:var(--muted);font:600 12px Figtree,sans-serif;text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--line)}
+.atttbl td{padding:10px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.atttbl tr.subjhead td{padding:10px 10px 4px;border-top:1px solid var(--line);font:800 14px var(--display);color:var(--ink);text-transform:none;letter-spacing:0;background:color-mix(in srgb,var(--ink) 4%,var(--surface))}
+.atttbl tr:first-child td{border-top:0}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font:700 13px Figtree,sans-serif;white-space:nowrap}
+.badge.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.badge.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.avgline{margin:14px 2px 0;color:var(--muted);font-size:15px}
+.avgline b{color:var(--ink);font:800 19px var(--display)}
+.motiv{display:flex;gap:13px;align-items:flex-start;margin:12px 0 0;padding:15px 16px;border-radius:14px;box-shadow:var(--shadow-sm)}
+.motiv .micon{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.motiv .micon svg{width:18px;height:18px}
+.motiv p{margin:0;flex:1;font:600 15px/1.5 Figtree,sans-serif;color:var(--ink)}
+.motiv.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.motiv.ok .micon{background:var(--ok)}
+.motiv.warn{background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
+.motiv.warn .micon{background:var(--warn)}
+
+/* Attendance progress bars: the Overall theory/practical numbers, visualised - a filled bar
+   with a tick mark at the required minimum, so "how close" reads at a glance before the
+   numbers even register. */
+.progress{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.prow .plabel{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 6px;font-size:14px;color:var(--muted)}
+.prow .plabel b{font:800 17px var(--display);color:var(--ink);letter-spacing:-.005em}
+.pbar{position:relative;height:9px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,var(--surface))}
+.pfill{position:absolute;inset:0;border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.pfill.ok{background:var(--ok)}
+.pfill.warn{background:var(--warn)}
+.ptick{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--ink);opacity:.3}
+</style>
+</head>
+<body>
+<main>
+
+  <section id="view-home">
+    <header>
+      <h1>Jaegers Hub</h1>
+    </header>
+
+    <div class="roll">
+      <label for="roll">Your roll no.</label>
+      <input id="roll" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="27">
+    </div>
+    <p class="welcome" id="welcome" hidden></p>
+
+    <div class="strip" id="todayStrip" hidden>
+      <div class="icon" id="stripIcon"></div>
+      <div class="body">
+        <span class="tag" id="stripTag"></span>
+        <span class="txt" id="stripTxt"></span>
+      </div>
+      <span class="schev" id="stripChev" aria-hidden="true"></span>
+    </div>
+
+    <div class="banner" id="messReminder" hidden>
+      <div class="icon">!</div>
+      <div class="txt">
+        <b>Mess bill debit — 11th to 16th</b>
+        Do you have the minimum balance for this month's mess bill?
+        <div><button type="button" id="messReminderBtn">Yes, I've checked</button></div>
+      </div>
+    </div>
+
+    <div class="announce" id="announceBox" hidden>
+      <div class="aicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5V7a4 4 0 0 1 8 0v3.5l1 2H3l1-2z"/><path d="M6.6 13.2a1.4 1.4 0 0 0 2.8 0"/></svg></div>
+      <div class="content">
+        <b class="lbl">Announcements</b>
+        <div class="body"></div>
+      </div>
+    </div>
+
+    <nav class="cards">
+      <a class="card tt" href="#timetable">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.3" width="12" height="10.5" rx="1.8"/><path d="M2 6.5h12M5.2 2v2.6M10.8 2v2.6"/></svg></div>
+        <div class="left"><h2>Timetable</h2><p id="ttSub">Loading…</p></div>
+        <div class="chev">›</div>
+      </a>
+      <a class="card mb" href="#messbill">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 1.8v3.9M5 1.8v3.9M6.4 1.8v3.9M5 5.7V14.2"/><path d="M11 1.8c1.6.3 1.6 3.6 0 3.9V14.2"/></svg></div>
+        <div class="left"><h2>Mess Bill</h2><p id="mbSub">Loading…</p></div>
+        <div class="chev">›</div>
+      </a>
+      <a class="card at" href="#attendance">
+        <div class="cicon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.8" y="2.6" width="10.4" height="11.8" rx="1.8"/><rect x="6" y="1.4" width="4" height="2" rx="0.8" fill="currentColor" stroke="none"/><path d="M5.4 8.6l1.8 1.8 3.4-3.8"/></svg></div>
+        <div class="left"><h2>Attendance</h2><p id="atSub">Loading…</p></div>
+        <div class="chev">›</div>
+      </a>
+    </nav>
+
+    <div class="banner install" id="installBanner" hidden>
+      <div class="icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v7.4M5 7l3 3 3-3"/><path d="M2.6 11.4v1.4a1.6 1.6 0 0 0 1.6 1.6h7.6a1.6 1.6 0 0 0 1.6-1.6v-1.4"/></svg></div>
+      <div class="txt">
+        <b>Install Jaegers Hub</b>
+        <span id="installText">Add this to your home screen for one-tap access.</span>
+        <div>
+          <button type="button" id="installBtn" hidden>Install</button>
+          <button type="button" id="installDismiss">Maybe later</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-timetable" hidden>
+    <a class="back" href="#">← Home</a>
+    <div class="panelhead">
+      <h2 id="title">Timetable</h2>
+      <p class="sub" id="updated"></p>
+    </div>
+
+    <div id="controls" hidden>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="mine" aria-pressed="true">My classes</button>
+        <button type="button" data-view="all" aria-pressed="false">Roll-wise</button>
+      </div>
+      <p class="weeknote" id="weekLabel"></p>
+      <nav class="days" id="days" aria-label="Day"></nav>
+      <button type="button" class="calbtn" id="calBtn">Add this week to my calendar</button>
+      <p class="calmsg" id="calMsg" role="status"></p>
+    </div>
+
+    <section id="out" aria-live="polite"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></section>
+    <footer id="foot" hidden></footer>
+  </section>
+
+  <section id="view-messbill" hidden>
+    <a class="back" href="#">← Home</a>
+    <div class="panelhead">
+      <h2 id="mbTitle">Mess Bill</h2>
+      <p class="sub" id="mbUpdated"></p>
+    </div>
+    <div id="mbOut"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></div>
+  </section>
+
+  <section id="view-attendance" hidden>
+    <a class="back" href="#">← Home</a>
+    <div class="panelhead">
+      <h2 id="atTitle">Attendance</h2>
+      <p class="sub" id="atUpdated"></p>
+    </div>
+    <div id="atOut"><div class="skel"><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div><div class="sk-row"></div></div></div>
+  </section>
+
+</main>
+
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <div id="sheetBody"></div>
+  <button type="button" class="sheet-close" id="sheetClose">CLOSE DETAILS</button>
+</section>
+
+<script>
+(() => {
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const skeleton = (n = 3) => '<div class="skel">' + '<div class="sk-row"></div>'.repeat(n) + '</div>';
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch {} }
+  };
+  const state = { names: {}, weekStart: null, entries: [], holidays: [], keyDates: [], manualAnnouncements: [], roll: store.get('roll') || '', view: 'mine', day: null, pdf: null };
+  let messSummary = null, attSummary = null;
+  let messReady = false, attReady = false; /* true once that summary's fetch has settled, success or fail -
+    lets route() tell "hasn't loaded yet" (keep the skeleton) apart from "genuinely failed" (show the error) */
+  const messCache = new Map(), attCache = new Map(); /* roll -> that one student's data, fetched on demand */
+  /* Fetches out of a per-roll folder (messbill/<roll>.json, attendance/<roll>.json), never the
+     bulk file - so typing a roll only ever downloads that one student's data, not everyone's. */
+  function fetchOne(folder, cache, roll){
+    if (cache.has(roll)) return Promise.resolve(cache.get(roll));
+    return fetch(`${folder}/${roll}.json`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+      .then(d => { cache.set(roll, d); return d; });
+  }
+  const PERSON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="5.2" r="2.6"/><path d="M2.8 14c.4-3 2.4-4.4 5.2-4.4s4.8 1.4 5.2 4.4"/></svg>';
+  const PIN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s5-4.2 5-8a5 5 0 1 0-10 0c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.7"/></svg>';
+  const CLOCK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8.3l2.6 1.6"/></svg>';
+  const CALENDAR = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.3" width="12" height="10.5" rx="1.8"/><path d="M2 6.5h12M5.2 2v2.6M10.8 2v2.6"/></svg>';
+  const CHEVRON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 3.8l4.2 4.2-4.2 4.2"/></svg>';
+  const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.4l3.2 3.2L13 4.7"/></svg>';
+  const TREND = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12.2l4-4 2.4 2.4L14 4.6"/><path d="M9.6 4.6H14v4.4"/></svg>';
+  const LECTURE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.2c1.8-.9 3.6-.9 5.4 0v9.2c-1.8-.9-3.6-.9-5.4 0z"/><path d="M13.4 3.2c-1.8-.9-3.6-.9-5.4 0v9.2c1.8-.9 3.6-.9 5.4 0z"/></svg>';
+  const PRACTICAL_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 1.8h3.6M6.8 1.8v3.7L3.3 12a1.3 1.3 0 0 0 1.2 1.9h7l0 0a1.3 1.3 0 0 0 1.2-1.9L9.2 5.5V1.8"/><path d="M5.6 9.6h4.8"/></svg>';
+
+  /* ---- dates: the timetable repeats weekly; some entries (clinics) only run between two dates ---- */
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
+  const dateOf = day => addDays(state.weekStart, DAYS.indexOf(day));
+  /* Dates are always shown with the year, everywhere on the site. */
+  const fmtDate = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const rangeOf = e => e.pfrom && e.pto && e.pfrom !== e.pto ? fmtISO(e.pfrom) + ' to ' + fmtISO(e.pto) : ''; /* a posting's dates */
+  const fmtISO = s => { const [y, m, dd] = s.split('-').map(Number); return fmtDate(new Date(y, m - 1, dd)); };
+  const DOW = d => DAYS[(d.getDay() + 6) % 7];
+  /* Compact "21–27 Sep 2026" style range for the Home screen cards: one year shown once. */
+  function fmtRangeCompact(start, end){
+    const dayMon = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    if (start.getFullYear() === end.getFullYear()){
+      if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${end.getDate()} ${end.toLocaleDateString('en-GB',{month:'short'})} ${end.getFullYear()}`;
+      return `${dayMon(start)} – ${dayMon(end)} ${end.getFullYear()}`;
+    }
+    return `${fmtDate(start)} – ${fmtDate(end)}`;
+  }
+  /* Does a timetable entry run on this date? Entries can be limited to a week or date range (from/to),
+     to exact dates (on), to days of the month (dom, mon), and can skip dates. day "*" means any weekday. */
+  function applies(e, d){
+    const k = iso(d);
+    if (e.from && k < e.from) return false;
+    if (e.to && k > e.to) return false;
+    if (e.on && !e.on.includes(k)) return false;
+    if (e.dom && !e.dom.includes(d.getDate())) return false;
+    if (e.mon && !e.mon.includes(d.getMonth() + 1)) return false;
+    if (e.nth && !e.nth.includes(Math.floor((d.getDate() - 1) / 7) + 1)) return false; /* 1st, 2nd... occurrence of this weekday in the month */
+    if (e.skip && e.skip.includes(k)) return false;
+    return e.day === '*' || e.day === DOW(d);
+  }
+  const entriesOn = day => { const d = dateOf(day); return state.entries.filter(e => applies(e, d)).sort(byTime); };
+  /* Has a timetable been uploaded for the shown week? The clinics rotation (rot) doesn't count. */
+  const weekCovered = () => DAYS.some(day => { const d = dateOf(day); return state.entries.some(e => !e.rot && applies(e, d)); });
+  const holidayFor = (day, d) => state.holidays.find(h => h.date === iso(d)) || state.holidays.find(h => !h.date && h.day === day);
+
+  /* Does a roll spec from the PDF ("1-25", "All", "1-20, 41, 45") include this roll? */
+  function rollMatches(spec, roll){
+    spec = String(spec || '').trim();
+    if (!spec || /\b(all|everyone|entire|whole)\b/i.test(spec)) return true;
+    if (!/\d/.test(spec)) return true; /* batch name we couldn't turn into roll numbers: show it rather than hide it */
+    const n = parseInt((String(roll).match(/(\d+)\D*$/) || [])[1], 10);
+    if (Number.isNaN(n)) return false;
+    const range = /(\d+)\s*(?:-|–|—|to)\s*(\d+)/gi;
+    const open = /(\d+)\s*(?:\+|onwards?|and\s+above)/gi;
+    let m;
+    while ((m = range.exec(spec))) if (n >= +m[1] && n <= +m[2]) return true;
+    while ((m = open.exec(spec))) if (n >= +m[1]) return true;
+    const rest = spec.replace(/(\d+)\s*(?:-|–|—|to)\s*(\d+)/gi, ' ').replace(/(\d+)\s*(?:\+|onwards?|and\s+above)/gi, ' ')
+                     .replace(/\b(roll|rolls|no|nos|number|numbers)\b\.?/gi, ' ');
+    if (!/[a-z]/i.test(rest)) return (rest.match(/\d+/g) || []).some(x => +x === n);
+    return false;
+  }
+  /* The trailing digits of whatever roll no. was typed, as a plain number - used to look students
+     up in the mess bill / attendance data, which are keyed by roll. */
+  const rollNum = () => parseInt((String(state.roll).match(/(\d+)\D*$/) || [])[1], 10);
+
+  /* "9:00", "09.00 AM", "1:30 pm" → minutes since midnight. Bare hours under 7 are read as afternoon. */
+  function clock(part){
+    const m = /(\d{1,2})(?:[:.](\d{2}))?\s*([ap]m?)?/i.exec(part || '');
+    if (!m) return null;
+    let h = +m[1]; const mi = +(m[2] || 0); const ap = (m[3] || '')[0]?.toLowerCase();
+    if (ap === 'p' && h < 12) h += 12;
+    if (ap === 'a' && h === 12) h = 0;
+    if (!ap && h < 7) h += 12;
+    return h * 60 + mi;
+  }
+  function span(time){
+    const parts = String(time || '').split(/\s*[-–—]\s*|\s+to\s+/i).map(x => x.trim());
+    const s = clock(parts[0]);
+    let e = parts[1] != null ? clock(parts[1]) : null;
+    if (s != null && e != null && e <= s) e += 720;
+    return { s, e, parts };
+  }
+  const byTime = (a, b) => (a._s ?? 1e9) - (b._s ?? 1e9);
+  const kindOf = c => /lect|theor/i.test(c) ? 'lecture' : /prac|lab|clinic|dissect|skill/i.test(c) ? 'practical' : '';
+  const fmtRolls = s => String(s || 'All').replace(/\s*-\s*/g, '–').replace(/(\d+)\s*\+/g, '$1+');
+  const hasNums = r => /\d/.test(String(r || ''));
+  /* "Batch B, Roll 51–100"; a batch name we couldn't convert shows as "Batch A" */
+  function rollLabel(e){
+    const r = String(e.rolls || 'All').trim();
+    if (!hasNums(r) && !/^all/i.test(r)) return /^(batch|group)/i.test(r) ? r : 'Batch ' + r;
+    return (e.batch ? 'Batch ' + e.batch + ', ' : '') + 'Roll ' + fmtRolls(r).replace(/(\d+)\+/g, '$1 onwards');
+  }
+
+  /* ---- class details bottom sheet (shared by My classes, Roll-wise and the Home strip) ---- */
+  const tapTargets = new Map(); /* data-key -> { e, day }, refilled on every render */
+  const entryKey = (day, e) => [day, e.time, e.subject, e.class, e.rolls, e.location].join('|');
+  const endMin = e => e._e != null ? e._e : e._s != null ? e._s + 60 : null;
+  /* Two entries share a slot when their times overlap (or, lacking parseable times, match exactly). */
+  const sameSlot = (a, b) => a._s == null || b._s == null ? a.time === b.time : a._s < endMin(b) && b._s < endMin(a);
+  const splitList = (s, re) => String(s || '').split(re).map(x => x.trim()).filter(Boolean);
+  const lines = arr => arr.map(x => `<span class="ln">${esc(x)}</span>`).join('');
+  const isAll = e => /^all/i.test(String(e.rolls || 'All').trim());
+  function distRolls(x){
+    const r = String(x.rolls || 'All').trim();
+    if (/^all/i.test(r)) return 'Everyone';
+    if (!hasNums(r)) return esc(rollLabel(x));
+    return (x.batch ? 'Batch ' + esc(x.batch) : 'Roll') + '<small>' + esc(fmtRolls(r).replace(/(\d+)\+/g, '$1 onwards')) + '</small>';
+  }
+  function sheetHTML(e, day){
+    const time = (e.parts || []).filter(Boolean).join(' – ');
+    const topic = e.class && !/^(theory|lecture|clinics?|practical|tutorials?)$/i.test(e.class.trim()) ? e.class : '';
+    const kind = kindOf(e.class || '');
+    const tile = (label, html, wide, plain) => html ? `<div class="tile${wide ? ' wide' : ''}"><span class="tl">${label}</span><div class="tv${plain ? ' plain' : ''}">${html}</div></div>` : '';
+    const fac = splitList(e.faculty, /\s*[,;]\s*|\s+&\s+/);
+    const venue = splitList(e.location, /\s*;\s*/);
+    let dist = '';
+    const same = entriesOn(day).filter(x => sameSlot(x, e));
+    if (same.length > 1){
+      dist = '<ul class="dist">' + same.map(x =>
+        `<li class="${state.roll && rollMatches(x.rolls, state.roll) ? 'mine' : ''}"><span class="r">${distRolls(x)}</span><span><b>${esc(x.subject)}</b>${x.class ? `<small>${esc(x.class)}</small>` : ''}${x.location ? `<small>${esc(x.location)}</small>` : ''}</span></li>`
+      ).join('') + '</ul>';
+    } else if (isAll(e)) dist = 'The whole batch together';
+    return `<span class="eyebrow">${esc(topic ? 'Session topic' : (e.class || (kind ? kind[0].toUpperCase() + kind.slice(1) : 'Class')))}</span>
+      <h2 id="sheetTitle">${esc(topic || e.subject)}</h2>
+      <p class="subj">${esc([topic ? e.subject : '', day + ', ' + fmtDate(dateOf(day))].filter(Boolean).join(' · '))}</p>
+      <div class="tiles">
+        ${tile('Time slot', esc(time || '—'))}
+        ${tile('Batch', isAll(e) ? 'Everyone' : esc(rollLabel(e)))}
+        ${tile(fac.length > 1 ? 'Faculty' : 'Faculty / Resident', fac.length ? lines(fac) : '—', true)}
+        ${tile('Venue', venue.length ? PIN + lines(venue).replace('<span class="ln">', '<span class="ln" style="display:inline">') : '—', true)}
+        ${rangeOf(e) ? tile('Posting dates', esc(rangeOf(e)), true) : ''}
+        ${dist ? tile('Who goes where', dist, true, true) : ''}
+      </div>`;
+  }
+  let sheetReturnFocus = null;
+  function openSheet(e, day){
+    $('#sheetBody').innerHTML = sheetHTML(e, day);
+    const sh = $('#sheet'), bg = $('#sheetBg');
+    sheetReturnFocus = document.activeElement;
+    sh.hidden = false; bg.hidden = false; sh.scrollTop = 0; sh.style.transform = '';
+    document.body.classList.add('sheet-open');
+    requestAnimationFrame(() => requestAnimationFrame(() => { sh.classList.add('show'); bg.classList.add('show'); }));
+    /* A history entry, so the phone's Back button closes the sheet instead of leaving the page. */
+    if (!(history.state && history.state.jhSheet)) history.pushState({ jhSheet: true }, '');
+    $('#sheetClose').focus({ preventScroll: true });
+  }
+  function hideSheet(){
+    const sh = $('#sheet'), bg = $('#sheetBg');
+    if (sh.hidden) return;
+    sh.classList.remove('show'); bg.classList.remove('show'); sh.style.transform = '';
+    document.body.classList.remove('sheet-open');
+    setTimeout(() => { if (!sh.classList.contains('show')){ sh.hidden = true; bg.hidden = true; } }, 320);
+    if (sheetReturnFocus && sheetReturnFocus.focus) sheetReturnFocus.focus({ preventScroll: true });
+  }
+  const closeSheet = () => { if (history.state && history.state.jhSheet) history.back(); else hideSheet(); };
+  window.addEventListener('popstate', hideSheet);
+  $('#sheetClose').addEventListener('click', closeSheet);
+  $('#sheetBg').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+  /* Swipe down to dismiss (only when the sheet is scrolled to its top). */
+  (() => {
+    const sh = $('#sheet'); let y0 = null, dy = 0;
+    sh.addEventListener('touchstart', ev => { y0 = sh.scrollTop <= 0 ? ev.touches[0].clientY : null; dy = 0; sh.style.transition = 'none'; }, { passive: true });
+    sh.addEventListener('touchmove', ev => { if (y0 == null) return; dy = Math.max(0, ev.touches[0].clientY - y0); if (dy) sh.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    sh.addEventListener('touchend', () => { sh.style.transition = ''; if (y0 != null && dy > 90) closeSheet(); else sh.style.transform = ''; y0 = null; });
+  })();
+  /* Tap / Enter / Space on anything with a data-key opens its sheet. */
+  function wireTaps(container){
+    const go = el => { const t = tapTargets.get(el.dataset.key); if (t) openSheet(t.e, t.day); };
+    container.addEventListener('click', ev => { const el = ev.target.closest('[data-key]'); if (el && container.contains(el)) go(el); });
+    container.addEventListener('keydown', ev => {
+      if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target.matches('[data-key]')) return;
+      ev.preventDefault(); go(ev.target);
+    });
+  }
+
+  const todayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  /* Mon to Sat always, plus Sunday when it appears in the timetable, is marked, or is today (inside the shown week) */
+  function visibleDays(){
+    const todayISO = iso(new Date());
+    return DAYS.filter((d, i) => i < 6 || iso(dateOf(d)) === todayISO || state.holidays.some(h => h.day === d) || state.entries.some(e => e.day === d));
+  }
+  function holidayView(day, isToday, isPast){
+    const h = holidayFor(day, dateOf(day));
+    const note = h && h.note;
+    return `<div class="head"><h2>${day}</h2><p>${fmtDate(dateOf(day))}</p></div>
+      <div class="holiday${isPast ? ' past' : ''}"><h3>Holiday</h3><p>${esc(note || (isToday ? 'No classes today.' : 'No classes on ' + day + '.'))}</p></div>`;
+  }
+
+  function renderDays(){
+    const days = visibleDays();
+    const todayISO = iso(new Date());
+    $('#days').innerHTML = days.map(d =>
+      `<button type="button" data-day="${d}" aria-pressed="${d === state.day}" class="${[iso(dateOf(d)) === todayISO ? 'today' : '', iso(dateOf(d)) < todayISO ? 'past' : '', entriesOn(d).length ? '' : 'off'].join(' ').trim()}"><span>${d.slice(0,3)}</span><small>${dateOf(d).getDate()}</small></button>`
+    ).join('');
+    $('#days [aria-pressed=true]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+
+  function renderOut(){
+    const out = $('#out');
+    const day = state.day;
+    if (!day) return;
+    const dayEntries = entriesOn(day);
+    const now = new Date();
+    const date = dateOf(day);
+    const isToday = iso(date) === iso(now);
+    const isPastDay = iso(date) < iso(now);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const covered = weekCovered();
+    const notice = covered ? '' : `<p class="notice">No timetable has been uploaded for this week yet.${dayEntries.length ? ' You are only seeing the clinics rotation.' : ''}</p>`;
+    /* A class is over once its end time has passed (start + 1 hour if no end time); a whole day once it is behind us. */
+    const isOver = e => isPastDay || (isToday && (e._e != null ? nowMin >= e._e : e._s != null && nowMin >= e._s + 60));
+
+    if (!dayEntries.length){
+      if (!covered && !holidayFor(day, date)){
+        out.innerHTML = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}</p></div>` + notice; return;
+      }
+      out.innerHTML = holidayView(day, isToday, isPastDay); return;
+    }
+
+    if (state.view === 'mine'){
+      if (!state.roll){ out.innerHTML = notice + '<p class="empty">Type your roll no. on the Home screen to see your classes.</p>'; return; }
+      const mine = dayEntries.filter(e => rollMatches(e.rolls, state.roll));
+      const head = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, ${mine.length} ${mine.length === 1 ? 'class' : 'classes'}</p></div>` + notice;
+      if (!mine.length){ out.innerHTML = head + `<p class="empty">Nothing on ${day} for roll ${esc(state.roll)}.</p>`; return; }
+      const live = e => !isOver(e);
+      const nowIdx = isToday ? mine.findIndex(e => e._s != null && e._e != null && nowMin >= e._s && nowMin < e._e) : -1;
+      const nextIdx = isToday && nowIdx < 0 ? mine.findIndex(e => e._s != null && e._s > nowMin) : -1;
+      out.innerHTML = head + mine.map((e, i) => {
+        const [a, b] = e.parts;
+        const flag = i === nowIdx ? '<span class="flag">Now</span>' : i === nextIdx ? '<span class="flag next">Next</span>' : '';
+        const kind = kindOf(e.class);
+        const kindIcon = kind === 'lecture' ? LECTURE_ICON : kind === 'practical' ? PRACTICAL_ICON : '';
+        const k = entryKey(day, e); tapTargets.set(k, { e, day });
+        return `<article class="card2 ${kind}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}" data-key="${esc(k)}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(e.subject)} details">
+          <div class="t"><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div>
+          <div>
+            <h3>${esc(e.subject)}${flag}</h3>
+            <p class="meta">
+              ${e.class ? `<span class="kind">${kindIcon}${esc(e.class)}</span>` : ''}
+              ${e.location ? `<span>${PIN}${esc(e.location)}</span>` : ''}
+              <span>${esc(rollLabel(e))}</span>
+            </p>
+          </div>
+          <span class="chev2">${CHEVRON}</span>
+        </article>`;
+      }).join('');
+      return;
+    }
+
+    /* Roll-wise: everyone's split for the day, grouped by time slot, your row highlighted */
+    const head = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, who goes where</p></div>` + notice;
+    const slots = new Map();
+    dayEntries.forEach(e => { const k = e.time; (slots.get(k) || slots.set(k, []).get(k)).push(e); });
+    out.innerHTML = head + [...slots].map(([time, list]) => {
+      const p = list[0].parts;
+      return `<div class="slot"><h3>${esc(p.join(' – '))}</h3><ul>` + list.map(e =>
+        `<li class="${[state.roll && rollMatches(e.rolls, state.roll) ? 'mine' : '', isOver(e) ? 'past' : ''].join(' ').trim()}" data-key="${esc(entryKey(day, e))}" role="button" tabindex="0" aria-haspopup="dialog">${(tapTargets.set(entryKey(day, e), { e, day }), '')}
+          <span class="rolls">${esc(hasNums(e.rolls) || /^all/i.test(e.rolls || 'All') ? fmtRolls(e.rolls) : rollLabel(e))}${e.batch ? `<small>Batch ${esc(e.batch)}</small>` : ''}</span>
+          <span class="what"><b>${esc(e.subject)}</b>${e.class ? `<small>${esc(e.class)}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}${rangeOf(e) ? `<small>${esc(rangeOf(e))}</small>` : ''}</span>
+          <span class="loc">${esc(e.location)}</span>
+        </li>`).join('') + '</ul></div>';
+    }).join('');
+  }
+
+  /* ---- add the shown week to the phone calendar (.ics) ---- */
+  const icsText = t => String(t ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const fold = line => (line.match(/[\s\S]{1,60}/gu) || ['']).join('\r\n ');
+  const hhmmss = m => pad(Math.floor(m / 60)) + pad(m % 60) + '00';
+  function buildICS(){
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Batch timetable//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+                   'X-WR-CALNAME:' + icsText(document.title)];
+    let count = 0;
+    for (const day of DAYS){
+      const d = dateOf(day), ymd = iso(d).replace(/-/g, '');
+      for (const e of entriesOn(day)){
+        if (!rollMatches(e.rolls, state.roll)) continue;
+        const when = e._s == null
+          ? ['DTSTART;VALUE=DATE:' + ymd, 'DTEND;VALUE=DATE:' + iso(addDays(d, 1)).replace(/-/g, '')]
+          : ['DTSTART:' + ymd + 'T' + hhmmss(e._s), 'DTEND:' + ymd + 'T' + hhmmss(Math.min(e._e != null ? e._e : e._s + 60, 1439))];
+        const desc = [e.faculty, rollLabel(e), rangeOf(e) && 'Posting dates: ' + rangeOf(e)].filter(Boolean).join('\n');
+        lines.push('BEGIN:VEVENT', 'UID:' + ymd + '-' + (e._s ?? 'x') + '-' + (count++) + '-' + String(state.roll).replace(/\W/g, '') + '@batch-timetable',
+                   'DTSTAMP:' + stamp, ...when,
+                   'SUMMARY:' + icsText(e.subject + (e.class ? ': ' + e.class : '')),
+                   ...(e.location ? ['LOCATION:' + icsText(e.location)] : []),
+                   ...(desc ? ['DESCRIPTION:' + icsText(desc)] : []), 'END:VEVENT');
+      }
+    }
+    lines.push('END:VCALENDAR');
+    return { text: lines.map(fold).join('\r\n') + '\r\n', count };
+  }
+  function addToCalendar(){
+    const msg = t => { $('#calMsg').textContent = t; };
+    if (!state.roll){ msg('Type your roll no. on the Home screen first.'); return; }
+    const { text, count } = buildICS();
+    if (!count){ msg('There are no classes to add in this week.'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/calendar;charset=utf-8' }));
+    a.download = 'classes-' + iso(state.weekStart) + '.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    msg(count + (count === 1 ? ' class' : ' classes') + ' for ' + fmtDate(state.weekStart) + ' to ' + fmtDate(addDays(state.weekStart, 6)) + ' saved. Open the file to add them to your calendar.');
+  }
+
+  function renderWelcome(){
+    const el = $('#welcome');
+    const n = rollNum();
+    const name = Number.isNaN(n) ? '' : (state.names[String(n)] || '');
+    el.hidden = !name;
+    el.textContent = name ? 'Welcome, ' + name : '';
+  }
+
+  function renderWeek(){
+    $('#calMsg').textContent = '';
+    const start = state.weekStart, end = addDays(start, 6);
+    $('#weekLabel').innerHTML = `Timetable for <b>${fmtDate(start)} – ${fmtDate(end)}</b>`;
+    $('#ttSub').textContent = fmtRangeCompact(start, end);
+    renderDays(); renderOut();
+  }
+
+  function initTimetable(d){
+    state.entries = (d.entries || []).map(e => { const sp = span(e.time); return { ...e, _s: sp.s, _e: sp.e, parts: sp.parts }; });
+    state.pdf = d.pdf || null;
+    state.names = d.names || {};
+    if (d.title){ $('#title').textContent = d.title; document.title = d.title; }
+    if (d.updated){
+      const dt = new Date(d.updated);
+      if (!isNaN(dt)) $('#updated').textContent = 'Updated ' + fmtDate(dt);
+    }
+    state.holidays = (d.holidays || []).filter(h => h && h.day);
+    if (!state.entries.length && !state.holidays.length){ $('#out').innerHTML = '<p class="empty">The timetable has no classes yet.</p>'; $('#ttSub').textContent = 'Nothing uploaded yet'; return; }
+    /* One week only: the week the timetable was published for. It changes only when a newer week is uploaded. */
+    const w = d.week && d.week.from ? d.week.from.split('-').map(Number) : null;
+    state.weekStart = w ? new Date(w[0], w[1] - 1, w[2]) : mondayOf(new Date());
+    const todayISO = iso(new Date());
+    state.day = todayISO >= iso(state.weekStart) && todayISO <= iso(addDays(state.weekStart, 6)) ? todayName() : 'Monday';
+    $('#controls').hidden = false;
+    if (state.pdf){ $('#foot').hidden = false; $('#foot').innerHTML = `<a href="${esc(state.pdf)}">Open the original PDF</a>`; }
+    renderWelcome(); renderWeek(); renderTodayStrip(); renderAllAnnouncements();
+    setInterval(renderOut, 60000);
+  }
+
+  /* ---- Mess Bill ---- */
+  function renderMessBill(){
+    const el = $('#mbOut');
+    if (!messSummary){ el.innerHTML = '<p class="empty">Couldn’t load the mess bill.</p>'; return; }
+    const n = rollNum();
+    if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your bill.</p>'; return; }
+    el.innerHTML = skeleton(3);
+    fetchOne('messbill', messCache, n).then(s => {
+      if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
+      if (!s){ el.innerHTML = `<p class="empty">No mess bill found for roll ${esc(state.roll)}.</p>`; return; }
+      const rows = list => list.map(x => `<tr><td>${esc(x.label)}</td><td>₹${x.amount.toLocaleString('en-IN')}</td></tr>`).join('');
+      el.innerHTML = `
+        <h3>${esc(s.name)}</h3>
+        <div class="billgroup">
+          <h4>Normal Charges</h4>
+          <table class="billtbl">${rows(s.normal)}<tr class="tot"><td>Total</td><td>₹${s.normal_total.toLocaleString('en-IN')}</td></tr></table>
+        </div>
+        <div class="billgroup">
+          <h4>Additional Charges</h4>
+          ${s.additional.length ? `<table class="billtbl">${rows(s.additional)}<tr class="tot"><td>Total</td><td>₹${s.additional_total.toLocaleString('en-IN')}</td></tr></table>` : '<p class="empty small">No additional charges.</p>'}
+        </div>
+        <div class="grandtotal"><span>Grand Total</span><b>₹${s.total.toLocaleString('en-IN')}</b></div>`;
+    });
+  }
+
+  /* ---- Attendance ---- */
+  /* Classes still needed to reach a target %, assuming every future class held is attended:
+     x ≥ (minPct·held − 100·attd) / (100−minPct). Kept in whole-number arithmetic throughout
+     (never minPct/100 as a float) so an exact result like 59.0 can't drift to 59.000000007
+     and get rounded up to 60 by floating-point noise. */
+  function moreNeeded(attd, held, minPct){
+    if (!held || attd * 100 >= minPct * held) return 0;
+    const num = minPct * held - 100 * attd;
+    const den = 100 - minPct;
+    return Math.max(0, Math.ceil(num / den));
+  }
+  /* A filled bar for one Overall figure, with a tick at the required minimum - "how close" reads
+     before the numbers do. */
+  function progressRow(label, block, minPct){
+    if (!block) return '';
+    const ok = block.pct >= minPct;
+    const fillPct = Math.max(0, Math.min(100, block.pct));
+    const tickPct = Math.max(0, Math.min(100, minPct));
+    return `<div class="prow">
+      <div class="plabel"><span>${esc(label)}</span><b>${block.pct}%</b></div>
+      <div class="pbar"><div class="pfill ${ok ? 'ok' : 'warn'}" style="width:${fillPct}%"></div><div class="ptick" style="left:${tickPct}%"></div></div>
+    </div>`;
+  }
+  function attRow(label, block, minPct){
+    if (!block) return '';
+    const ok = block.pct >= minPct;
+    const need = ok ? 0 : moreNeeded(block.attd, block.held, minPct);
+    return `<tr><td>${esc(label)}</td><td>${block.held}</td><td>${block.attd}</td><td>${block.pct}%</td>
+      <td><span class="badge ${ok ? 'ok' : 'warn'}">${ok ? '✓ Clear' : '→ ' + need + ' more'}</span></td></tr>`;
+  }
+  /* A closing, encouraging line for the overall totals: praise (tiered by how comfortable the
+     margin is) when clear, or the exact run of classes - attended with no misses - that gets
+     there, reframing the raw "N more" figure as a streak to aim for rather than a scary
+     countdown, tiered by how big an ask that streak actually is. */
+  function attendanceMotivation(s, tMin, pMin){
+    const theory = s.total_theory, practical = s.total_practical;
+    const theoryOk = !theory || theory.pct >= tMin;
+    const practicalOk = !practical || practical.pct >= pMin;
+    if (theoryOk && practicalOk){
+      const margin = Math.min(theory ? theory.pct - tMin : Infinity, practical ? practical.pct - pMin : Infinity);
+      const text = margin >= 10
+        ? 'Comfortably clear on both theory and practical — that’s real consistency. Keep it up.'
+        : 'You’re clear on both theory and practical. Nice work — stay consistent and you’ll be fine.';
+      return { ok: true, text };
+    }
+    const needs = [];
+    if (!theoryOk) needs.push({ label: 'theory', n: moreNeeded(theory.attd, theory.held, tMin) });
+    if (!practicalOk) needs.push({ label: 'practical', n: moreNeeded(practical.attd, practical.held, pMin) });
+    const totalN = needs.reduce((a, b) => a + b.n, 0);
+    const bits = needs.map(x => `${x.n} ${x.label} class${x.n === 1 ? '' : 'es'}`).join(' and ');
+    const text = totalN <= 3
+      ? `So close! Attend your next ${bits} in a row, no misses, and you’re fully clear.`
+      : totalN <= 10
+        ? `You’re on track — attend your next ${bits} in a row, no misses, and you’ll be fully clear.`
+        : `It’s a real push, but doable — attend your next ${bits} in a row from now on and you’ll get there. Every class from today counts.`;
+    return { ok: false, text };
+  }
+  function renderAttendance(){
+    const el = $('#atOut');
+    if (!attSummary){ el.innerHTML = '<p class="empty">Couldn’t load attendance.</p>'; return; }
+    const n = rollNum();
+    if (Number.isNaN(n)){ el.innerHTML = '<p class="empty">Type your roll no. on the Home screen to see your attendance.</p>'; return; }
+    el.innerHTML = skeleton(4);
+    fetchOne('attendance', attCache, n).then(s => {
+      if (rollNum() !== n) return; /* roll changed again mid-fetch - a newer call already took over */
+      if (!s){ el.innerHTML = `<p class="empty">No attendance found for roll ${esc(state.roll)}.</p>`; return; }
+      const tMin = attSummary.theory_min_pct, pMin = attSummary.practical_min_pct;
+      let rows = '';
+      for (const name of attSummary.subjects){
+        const sub = s.subjects[name];
+        if (!sub) continue;
+        rows += `<tr class="subjhead"><td colspan="5">${esc(name)}</td></tr>`;
+        rows += attRow('Theory', sub.theory, tMin);
+        rows += attRow('Practical', sub.practical, pMin);
+      }
+      rows += `<tr class="subjhead"><td colspan="5">Overall</td></tr>`;
+      rows += attRow('Theory', s.total_theory, tMin);
+      rows += attRow('Practical', s.total_practical, pMin);
+      const motiv = attendanceMotivation(s, tMin, pMin);
+      const progress = progressRow('Theory', s.total_theory, tMin) + progressRow('Practical', s.total_practical, pMin);
+      el.innerHTML = `
+        <h3>${esc(s.name)}</h3>
+        <table class="atttbl">
+          <thead><tr><th></th><th>Held</th><th>Attd</th><th>%</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${progress ? `<div class="progress">${progress}</div>` : ''}
+        <p class="avgline">Average <b>${s.avg_pct}%</b> · theory min ${tMin}%, practical min ${pMin}%</p>
+        <div class="motiv ${motiv.ok ? 'ok' : 'warn'}"><div class="micon">${motiv.ok ? CHECK : TREND}</div><p>${esc(motiv.text)}</p></div>`;
+    });
+  }
+
+  /* ---- Home: mess bill reminder banner (shows 11th–16th of the month, dismissible for that month) ---- */
+  const BANK_HOLIDAYS = []; /* add "YYYY-MM-DD" entries here later to also skip those dates */
+  function monthKey(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+  function renderReminder(){
+    const el = $('#messReminder');
+    const now = new Date();
+    const day = now.getDate();
+    const inWindow = day >= 11 && day <= 16 && !BANK_HOLIDAYS.includes(iso(now));
+    if (!inWindow){ el.hidden = true; return; }
+    const key = 'messReminderDismissed_' + (state.roll || 'anon');
+    el.hidden = store.get(key) === monthKey(now);
+  }
+  $('#messReminderBtn').addEventListener('click', () => {
+    store.set('messReminderDismissed_' + (state.roll || 'anon'), monthKey(new Date()));
+    $('#messReminder').hidden = true;
+  });
+
+  /* ---- Home: announcements. Two sources in one box:
+     1. Auto - any class in the current week's timetable.json whose class/subject mentions an
+        internal assessment (common spellings/abbreviations included). Nothing to edit by hand:
+        it's worked out from the timetable every time the page loads, the roll changes, and once
+        a minute, so it vanishes on its own once the assessment is over or next week's timetable
+        replaces this one. Scoped like the timetable itself: an assessment held during clinics
+        carries the posted batch's rolls (the parser assigns them), so only that batch sees it;
+        one for "All" shows to everyone, even before a roll is typed.
+     2. Manual - announcements.json, now with two optional extras per item:
+        "rolls": "39-76" (only those rolls see it) and "until": "YYYY-MM-DD" (hidden after that
+        day). An ISO "date" is shown formatted with the year. Old items keep working as-is. ---- */
+  const ANNOUNCEMENT_KEYWORDS = [
+    { re: /\bint(?:ernal|\.)?\s*assess?e?ments?\b/i, label: 'Internal Assessment' },
+  ];
+  /* Every keyword match in the shown week that isn't over yet, whoever it's for. */
+  function assessmentMatches(){
+    if (!state.weekStart) return [];
+    const now = new Date(), todayISO = iso(now), nowMin = now.getHours() * 60 + now.getMinutes();
+    const out = [], seen = new Set();
+    for (const day of DAYS){
+      const d = dateOf(day), k = iso(d);
+      if (k < todayISO) continue;
+      for (const e of entriesOn(day)){
+        const hit = ANNOUNCEMENT_KEYWORDS.find(w => w.re.test(`${e.class || ''} ${e.subject || ''}`));
+        if (!hit) continue;
+        if (k === todayISO && endMin(e) != null && nowMin >= endMin(e)) continue; /* already finished today */
+        const key = [hit.label, k, e.subject, e.rolls].join('|');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ hit, e, day, d, common: rollMatches(e.rolls, '') });
+      }
+    }
+    return out;
+  }
+  /* The ones this viewer should see: common ones always, batch ones only for a matching roll. */
+  const myAssessments = () => assessmentMatches().filter(m => m.common || (state.roll && rollMatches(m.e.rolls, state.roll)));
+  function whenChip(d){
+    const n = daysUntil(d);
+    return n === 0 ? '<span class="when">Today</span>' : n === 1 ? '<span class="when">Tomorrow</span>' : `<span class="when later">In ${n} days</span>`;
+  }
+  function renderAllAnnouncements(){
+    const el = $('#announceBox');
+    const todayISO = iso(new Date());
+    const auto = myAssessments().map(m => {
+      const time = (m.e.parts || []).filter(Boolean).join(' – ');
+      const bits = [m.e.subject && !m.hit.re.test(m.e.subject) ? m.e.subject : '', m.e.location, m.common ? '' : rollLabel(m.e)].filter(Boolean);
+      return `<div class="note"><b>${esc(m.hit.label)}</b>${bits.length ? ' — ' + esc(bits.join(' · ')) : ''}<span class="date">${esc(m.day.slice(0, 3) + ', ' + fmtDate(m.d) + (time ? ' · ' + time : ''))}${whenChip(m.d)}</span></div>`;
+    });
+    const manual = (state.manualAnnouncements || [])
+      .filter(a => a && (a.title || a.text))
+      .filter(a => !a.until || String(a.until) >= todayISO)
+      .filter(a => !a.rolls || rollMatches(a.rolls, state.roll))
+      .map(a => {
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(a.date || '')) ? fmtISO(a.date) : a.date;
+        return `<div class="note">${a.title ? `<b>${esc(a.title)}</b>${a.text ? ' — ' : ''}` : ''}${esc(a.text || '')}${date ? `<span class="date">${esc(date)}</span>` : ''}</div>`;
+      });
+    /* Before a roll is typed, say so if a batch-only announcement is waiting, instead of hiding it silently. */
+    const waiting = !state.roll && assessmentMatches().some(m => !m.common);
+    const hint = waiting ? '<p class="hint">One batch has an internal assessment this week. Type your roll no. to see if it’s yours.</p>' : '';
+    const html = auto.join('') + manual.join('') + hint;
+    el.hidden = !html;
+    el.querySelector('.body').innerHTML = html;
+  }
+
+  /* ---- Home: "install this" banner. A PWA install prompt is otherwise invisible - Android/Chrome
+     can offer a native one but only after `beforeinstallprompt` fires (timing is the browser's own
+     call), and iOS Safari never fires it at all, so those users only ever get there via Share ->
+     Add to Home Screen. This shows *something* actionable on first visit either way, dismissible
+     for good (localStorage), and never shown once the site is already running installed. ---- */
+  function initInstallBanner(){
+    const el = $('#installBanner');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const dismissCount = parseInt(store.get('installBannerDismissCount') || '0', 10);
+    /* "Maybe later" only hides it for that visit until it's been dismissed 3 times total,
+       then it stops appearing for good - gives it a few chances to be noticed without
+       becoming permanently annoying. */
+    if (isStandalone || store.get('installBannerDismissed') === '1' || dismissCount >= 3) return;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    let deferredPrompt = null;
+    const setText = (t, showBtn) => { $('#installText').textContent = t; $('#installBtn').hidden = !showBtn; };
+
+    if (isIOS){
+      setText('Tap the Share icon in Safari, then "Add to Home Screen."', false);
+    } else {
+      /* Shown immediately as a safe fallback for any browser that never fires the event
+         (Firefox mobile, in-app browsers, etc.) - upgraded to a real one-tap Install button
+         the moment (and if) the browser actually offers one. */
+      setText('Open your browser menu and choose "Add to Home screen" or "Install app."', false);
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        setText('Add this to your home screen for one-tap access, even with a weak signal.', true);
+      });
+    }
+    el.hidden = false;
+
+    $('#installBtn').addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      el.hidden = true;
+      store.set('installBannerDismissed', '1');
+    });
+    $('#installDismiss').addEventListener('click', () => {
+      el.hidden = true;
+      const n = dismissCount + 1;
+      store.set('installBannerDismissCount', String(n));
+      if (n >= 3) store.set('installBannerDismissed', '1');
+    });
+    window.addEventListener('appinstalled', () => { store.set('installBannerDismissed', '1'); el.hidden = true; });
+  }
+
+  /* ---- Home: "today strip" - one line combining "next class" and "key dates", whichever
+     is more urgent. Replaces having to dig into Timetable just to see what's next, and gives
+     upcoming exam/deadline dates a quiet place to surface without their own permanent section. ---- */
+  function parseISODateOnly(s){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '').trim());
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function daysUntil(d){
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return Math.round((d - now) / 86400000);
+  }
+  /* Soonest key date that hasn't passed yet (today counts). */
+  function nearestKeyDate(){
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const upcoming = (state.keyDates || [])
+      .map(k => ({ ...k, d: parseISODateOnly(k.date) }))
+      .concat(myAssessments().map(m => ({ title: m.hit.label + (m.e.subject && !m.hit.re.test(m.e.subject) ? ' · ' + m.e.subject : ''), d: m.d, entry: m.e, day: m.day })))
+      .filter(k => k.d && k.d >= now)
+      .sort((a, b) => a.d - b.d);
+    return upcoming[0] || null;
+  }
+  /* Today's ongoing/next class for the typed roll, only when the currently-shown timetable
+     week actually covers today (an unrefreshed week shouldn't claim to know what's "next"). */
+  function todayEntriesForRoll(){
+    if (!state.roll || !state.weekStart) return [];
+    const todayISO = iso(new Date());
+    if (todayISO < iso(state.weekStart) || todayISO > iso(addDays(state.weekStart, 6))) return [];
+    return entriesOn(todayName()).filter(e => rollMatches(e.rolls, state.roll));
+  }
+  function classLine(){
+    const mine = todayEntriesForRoll();
+    if (!mine.length) return null;
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const current = mine.find(e => e._s != null && e._e != null && nowMin >= e._s && nowMin < e._e);
+    const pick = current || mine.find(e => e._s != null && e._s > nowMin);
+    if (!pick) return null;
+    return {
+      kind: current ? 'now' : 'next',
+      tag: current ? 'Happening now' : 'Up next',
+      icon: CLOCK,
+      pulse: !!current,
+      text: [pick.subject, pick.location].filter(Boolean).join(' · '),
+      sub: pick.parts.filter(Boolean).join(' – '),
+      entry: pick, day: todayName()
+    };
+  }
+  function dateLine(k){
+    const n = daysUntil(k.d);
+    const when = n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
+    return { kind: 'date', tag: 'Key date', icon: CALENDAR, pulse: n <= 1, text: k.title, sub: when[0].toUpperCase() + when.slice(1), entry: k.entry, day: k.day };
+  }
+  function renderTodayStrip(){
+    const el = $('#todayStrip');
+    const k = nearestKeyDate();
+    const kn = k ? daysUntil(k.d) : null;
+    const cl = classLine();
+    /* A date within 2 days wins outright (needs action); otherwise a live/upcoming class wins
+       (the everyday case); a date within a week still surfaces if there's no class to show. */
+    let line = null;
+    if (k && kn <= 2) line = dateLine(k);
+    else if (cl) line = cl;
+    else if (k && kn <= 7) line = dateLine(k);
+    if (!line){ el.hidden = true; return; }
+    el.hidden = false;
+    /* Tappable whenever the line is about a real timetable class: opens into the same details
+       as the Timetable cards. Stays open across the 60s refresh while it's the same class. */
+    /* Tappable whenever the line is about a real timetable class: opens the same details sheet. */
+    stripLine = line.entry ? line : null;
+    el.className = 'strip ' + line.kind + (stripLine ? ' tappable' : '');
+    if (stripLine){ el.setAttribute('role', 'button'); el.tabIndex = 0; el.setAttribute('aria-haspopup', 'dialog'); }
+    else { el.removeAttribute('role'); el.removeAttribute('tabindex'); el.removeAttribute('aria-haspopup'); }
+    $('#stripIcon').innerHTML = line.icon;
+    $('#stripTag').innerHTML = (line.pulse ? '<span class="dot"></span>' : '') + esc(line.tag);
+    $('#stripTxt').innerHTML = esc(line.text) + (line.sub ? `<span class="sub">${esc(line.sub)}</span>` : '');
+    $('#stripChev').innerHTML = stripLine ? CHEVRON : '';
+  }
+  let stripLine = null;
+  $('#todayStrip').addEventListener('click', () => { if (stripLine) openSheet(stripLine.entry, stripLine.day); });
+  $('#todayStrip').addEventListener('keydown', ev => {
+    if (!stripLine || (ev.key !== 'Enter' && ev.key !== ' ') || ev.target !== ev.currentTarget) return;
+    ev.preventDefault(); openSheet(stripLine.entry, stripLine.day);
+  });
+  function loadKeyDates(list){
+    state.keyDates = Array.isArray(list) ? list : [];
+    renderTodayStrip();
+  }
+
+  /* ---- roll input: shared across Home + all three sections ---- */
+  $('#roll').value = state.roll;
+  let rollDebounce = null;
+  $('#roll').addEventListener('input', e => {
+    state.roll = e.target.value.trim();
+    store.set('roll', state.roll);
+    $('#calMsg').textContent = '';
+    renderWelcome(); renderReminder(); renderTodayStrip(); renderAllAnnouncements(); renderOut();
+    /* Debounced: each keystroke would otherwise fetch a different (possibly someone else's)
+       roll's file while typing - e.g. "136" briefly fetches roll 1, then 13, then 136. */
+    clearTimeout(rollDebounce);
+    rollDebounce = setTimeout(() => { renderMessBill(); renderAttendance(); }, 350);
+  });
+  document.querySelector('.seg')?.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.view = b.dataset.view;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    renderOut();
+  });
+  $('#calBtn').addEventListener('click', addToCalendar);
+  $('#days').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.day = b.dataset.day; renderDays(); renderOut();
+  });
+
+  /* ---- routing: Home + three sections, switched by URL hash, nothing ever reloads ---- */
+  const VIEWS = ['home', 'timetable', 'messbill', 'attendance'];
+  function route(){
+    const hash = location.hash.replace('#', '');
+    const view = VIEWS.includes(hash) ? hash : 'home';
+    for (const v of VIEWS) $('#view-' + v).hidden = v !== view;
+    /* Guarded so landing directly on a section - a bookmark, a shared link, or simply hitting
+       refresh while on it - shows the loading skeleton until its own fetch settles, instead of
+       crashing (timetable, before weekStart exists) or flashing a false "couldn't load" (mess
+       bill/attendance, before their summary has arrived). */
+    if (view === 'timetable' && state.weekStart) { renderDays(); renderOut(); }
+    if (view === 'home') { renderReminder(); renderTodayStrip(); renderAllAnnouncements(); }
+    if (view === 'messbill' && messReady) renderMessBill();
+    if (view === 'attendance' && attReady) renderAttendance();
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  renderWelcome();
+  initInstallBanner();
+  setInterval(() => { renderTodayStrip(); renderAllAnnouncements(); }, 60000);
+  wireTaps($('#out'));
+
+  fetch('timetable.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(initTimetable)
+    .catch(() => { $('#out').innerHTML = '<p class="empty">Couldn’t load the timetable. If you opened this file directly, serve it with GitHub Pages or a local server.</p>'; $('#ttSub').textContent = 'Unavailable'; });
+
+  fetch('messbill.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => {
+      messSummary = d; messReady = true;
+      $('#mbTitle').textContent = d.title || 'Mess Bill';
+      $('#mbSub').textContent = d.month || '';
+      $('#mbUpdated').textContent = d.updated ? 'Updated ' + fmtDate(new Date(d.updated)) : '';
+      renderReminder(); renderMessBill();
+    })
+    .catch(() => { messReady = true; $('#mbSub').textContent = 'Not uploaded yet'; $('#mbOut').innerHTML = '<p class="empty">Mess bill hasn’t been uploaded yet.</p>'; });
+
+  fetch('attendance.json', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => {
+      attSummary = d; attReady = true;
+      $('#atTitle').textContent = d.title || 'Attendance';
+      $('#atSub').textContent = d.as_of ? 'Till ' + d.as_of : '';
+      $('#atUpdated').textContent = [d.term, d.updated ? 'updated ' + fmtDate(new Date(d.updated)) : ''].filter(Boolean).join(' · ');
+      renderAttendance();
+    })
+    .catch(() => { attReady = true; $('#atSub').textContent = 'Not uploaded yet'; $('#atOut').innerHTML = '<p class="empty">Attendance hasn’t been uploaded yet.</p>'; });
+
+  fetch('announcements.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : [])
+    .then(list => { state.manualAnnouncements = Array.isArray(list) ? list : []; renderAllAnnouncements(); })
+    .catch(() => {});
+
+  fetch('keydates.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : [])
+    .then(loadKeyDates)
+    .catch(() => loadKeyDates([]));
+
+  /* Installable + works-offline: registers sw.js, which caches the app shell and falls back to
+     the last successful data load when the network is down. Safe to skip silently if the
+     browser doesn't support it or the file isn't there yet. */
+  if ('serviceWorker' in navigator){
+    /* When an updated sw.js takes over (a new upload), reload once so the fresh page shows right
+       away instead of on the visit after. Skipped on the very first install (nothing to replace). */
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      reloaded = true; location.reload();
+    });
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+})();
+</script>
+<script data-goatcounter="https://tronnemesis.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -6,9 +6,11 @@
       per-roll files) - network-first with a cache fallback. A good connection always gets the
       latest numbers; a bad one falls back to the last successful load instead of a dead
       "couldn't load" screen.
-   Bump CACHE below (v1 -> v2 ...) if a future change needs to force everyone's cache to clear;
-   otherwise this file can be left alone across ordinary content updates. */
-const CACHE = 'jaegers-hub-v1';
+   The page itself (index.html / "./") is network-first too, so an updated index.html shows up
+   on the next load instead of being stuck behind an old cached copy; the cache is only the
+   offline fallback. Icons and the manifest stay cache-first (they never change).
+   Bump CACHE below (v2 -> v3 ...) if a future change needs to force everyone's cache to clear. */
+const CACHE = 'jaegers-hub-v2';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -29,7 +31,8 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
-  if (url.pathname.endsWith('.json')) {
+  const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+  if (isPage || url.pathname.endsWith('.json')) {
     event.respondWith(
       fetch(req)
         .then(res => {
