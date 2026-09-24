@@ -78,6 +78,10 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .strip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:stripPulse 1.6s ease-in-out infinite}
 .strip .txt{display:block;margin-top:3px;font:800 18px/1.28 var(--display);color:var(--ink);letter-spacing:-.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .txt .sub{display:block;margin-top:2px;font:500 13.5px Figtree,sans-serif;color:var(--muted);white-space:normal}
+.strip.tappable{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.strip.tappable:active{transform:scale(.98)}
+.strip .schev{position:relative;flex:0 0 auto;color:var(--muted);display:flex}
+.strip .schev svg{width:18px;height:18px}
 @keyframes stripIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 @keyframes stripPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
 @media (prefers-reduced-motion:reduce){.strip{animation:none}.strip .dot{animation:none}}
@@ -89,8 +93,12 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .announce b.lbl{display:block;font:700 12.5px Figtree,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
 .announce .note{font-size:15px}
 .announce .note+.note{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
-.announce .note b{display:inline;font:700 14px Figtree;color:var(--ink)}
+.announce .note b{display:inline;font:700 14px Figtree,system-ui,sans-serif;color:var(--ink)}
 .announce .note .date{display:block;margin-top:3px;color:var(--muted);font-size:13px}
+.announce .note .when{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--signal);color:var(--signal-ink);font:700 11.5px Figtree,sans-serif;vertical-align:1px}
+.announce .note .when.later{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.announce .hint{font-size:14px;color:var(--muted)}
+.announce .note+.hint{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
 
 .cards{display:flex;flex-direction:column;gap:10px}
 .card{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
@@ -154,6 +162,48 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .holiday h3{font:800 36px/1.1 var(--display);letter-spacing:-.02em}
 .holiday p{margin:10px 0 0;color:var(--muted)}
 .card2,.slot li,.holiday{transition:opacity .4s}
+
+/* Class details bottom sheet: tapping a class (My classes card, Roll-wise row, or the Home strip)
+   slides a panel up from the bottom with everything about it - topic, faculty, time, venue,
+   batch, posting dates and who else goes where in that slot. Closes on the button, a tap on
+   the dimmed page, a swipe down, Esc, or the phone's Back button. */
+.card2[data-key],.slot li[data-key]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.card2[data-key]:active,.slot li[data-key]:active{transform:scale(.985)}
+.card2{position:relative;padding-right:36px;transition:opacity .4s,transform .15s ease}
+.card2 .chev2{position:absolute;top:50%;right:12px;transform:translateY(-50%);color:var(--muted);display:flex}
+.card2 .chev2 svg{width:18px;height:18px}
+.slot li{transition:opacity .4s,transform .15s ease}
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(6,14,12,.5);opacity:0;transition:opacity .25s ease}
+.sheet-bg.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:640px;margin:0 auto;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom));background:var(--surface);border-radius:24px 24px 0 0;
+  box-shadow:0 -12px 40px -8px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.3,1)}
+.sheet.show{transform:none}
+.sheet .grab{width:44px;height:5px;margin:4px auto 16px;border-radius:999px;background:var(--line)}
+.sheet .eyebrow{display:block;font:700 12px Figtree,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.sheet h2{margin:6px 0 4px;font:800 26px/1.15 var(--display);letter-spacing:-.015em;color:var(--ink)}
+.sheet .subj{margin:0 0 16px;color:var(--muted);font-size:15px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--ink) 3%,var(--surface))}
+.tile.wide{grid-column:1/-1}
+.tile .tl{display:block;margin-bottom:5px;font:700 11.5px Figtree,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .tv{font:700 16.5px/1.35 var(--display);color:var(--ink)}
+.tile .tv .ln{display:block}
+.tile .tv .ln+.ln{margin-top:3px}
+.tile .tv.plain{font:500 15px/1.45 Figtree,sans-serif}
+.tile .tv svg{width:16px;height:16px;margin-right:6px;vertical-align:-2px;color:var(--accent)}
+.sheet-close{display:block;width:100%;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);font:700 15px Figtree,sans-serif;letter-spacing:.04em;cursor:pointer}
+.sheet-close:active{transform:scale(.98)}
+.dist{list-style:none;margin:2px 0 0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.dist li{display:grid;grid-template-columns:minmax(80px,auto) 1fr;gap:10px;align-items:start;padding:9px 11px;font:500 14px/1.35 Figtree,sans-serif}
+.dist li+li{border-top:1px solid var(--line)}
+.dist li.mine{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
+.dist .r{font:800 14px/1.3 var(--display);font-variant-numeric:tabular-nums}
+.dist small{display:block;color:var(--muted);font:500 12.5px/1.35 Figtree,sans-serif}
+.dist b{font-weight:600}
+body.sheet-open{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-bg{transition:none}}
+@media (prefers-reduced-motion:reduce){.details{animation:none}.card2 .chev2,.strip .schev{transition:none}}
 .card2.past,.slot li.past,.holiday.past{opacity:.5;filter:saturate(.55)}
 .days button.past:not([aria-pressed=true]){opacity:.55}
 .notice{margin:12px 0 0;padding:12px 14px;border-radius:10px;border:1px dashed var(--line);background:var(--surface);color:var(--muted);font-size:14px}
@@ -240,6 +290,7 @@ footer a{color:var(--accent)}
         <span class="tag" id="stripTag"></span>
         <span class="txt" id="stripTxt"></span>
       </div>
+      <span class="schev" id="stripChev" aria-hidden="true"></span>
     </div>
 
     <div class="banner" id="messReminder" hidden>
@@ -332,6 +383,13 @@ footer a{color:var(--accent)}
 
 </main>
 
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <div id="sheetBody"></div>
+  <button type="button" class="sheet-close" id="sheetClose">CLOSE DETAILS</button>
+</section>
+
 <script>
 (() => {
   const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -360,6 +418,7 @@ footer a{color:var(--accent)}
   const PIN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s5-4.2 5-8a5 5 0 1 0-10 0c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.7"/></svg>';
   const CLOCK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8.3l2.6 1.6"/></svg>';
   const CALENDAR = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.3" width="12" height="10.5" rx="1.8"/><path d="M2 6.5h12M5.2 2v2.6M10.8 2v2.6"/></svg>';
+  const CHEVRON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 3.8l4.2 4.2-4.2 4.2"/></svg>';
   const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.4l3.2 3.2L13 4.7"/></svg>';
   const TREND = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12.2l4-4 2.4 2.4L14 4.6"/><path d="M9.6 4.6H14v4.4"/></svg>';
   const LECTURE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.2c1.8-.9 3.6-.9 5.4 0v9.2c-1.8-.9-3.6-.9-5.4 0z"/><path d="M13.4 3.2c-1.8-.9-3.6-.9-5.4 0v9.2c1.8-.9 3.6-.9 5.4 0z"/></svg>';
@@ -452,6 +511,89 @@ footer a{color:var(--accent)}
     return (e.batch ? 'Batch ' + e.batch + ', ' : '') + 'Roll ' + fmtRolls(r).replace(/(\d+)\+/g, '$1 onwards');
   }
 
+  /* ---- class details bottom sheet (shared by My classes, Roll-wise and the Home strip) ---- */
+  const tapTargets = new Map(); /* data-key -> { e, day }, refilled on every render */
+  const entryKey = (day, e) => [day, e.time, e.subject, e.class, e.rolls, e.location].join('|');
+  const endMin = e => e._e != null ? e._e : e._s != null ? e._s + 60 : null;
+  /* Two entries share a slot when their times overlap (or, lacking parseable times, match exactly). */
+  const sameSlot = (a, b) => a._s == null || b._s == null ? a.time === b.time : a._s < endMin(b) && b._s < endMin(a);
+  const splitList = (s, re) => String(s || '').split(re).map(x => x.trim()).filter(Boolean);
+  const lines = arr => arr.map(x => `<span class="ln">${esc(x)}</span>`).join('');
+  const isAll = e => /^all/i.test(String(e.rolls || 'All').trim());
+  function distRolls(x){
+    const r = String(x.rolls || 'All').trim();
+    if (/^all/i.test(r)) return 'Everyone';
+    if (!hasNums(r)) return esc(rollLabel(x));
+    return (x.batch ? 'Batch ' + esc(x.batch) : 'Roll') + '<small>' + esc(fmtRolls(r).replace(/(\d+)\+/g, '$1 onwards')) + '</small>';
+  }
+  function sheetHTML(e, day){
+    const time = (e.parts || []).filter(Boolean).join(' – ');
+    const topic = e.class && !/^(theory|lecture|clinics?|practical|tutorials?)$/i.test(e.class.trim()) ? e.class : '';
+    const kind = kindOf(e.class || '');
+    const tile = (label, html, wide, plain) => html ? `<div class="tile${wide ? ' wide' : ''}"><span class="tl">${label}</span><div class="tv${plain ? ' plain' : ''}">${html}</div></div>` : '';
+    const fac = splitList(e.faculty, /\s*[,;]\s*|\s+&\s+/);
+    const venue = splitList(e.location, /\s*;\s*/);
+    let dist = '';
+    const same = entriesOn(day).filter(x => sameSlot(x, e));
+    if (same.length > 1){
+      dist = '<ul class="dist">' + same.map(x =>
+        `<li class="${state.roll && rollMatches(x.rolls, state.roll) ? 'mine' : ''}"><span class="r">${distRolls(x)}</span><span><b>${esc(x.subject)}</b>${x.class ? `<small>${esc(x.class)}</small>` : ''}${x.location ? `<small>${esc(x.location)}</small>` : ''}</span></li>`
+      ).join('') + '</ul>';
+    } else if (isAll(e)) dist = 'The whole batch together';
+    return `<span class="eyebrow">${esc(topic ? 'Session topic' : (e.class || (kind ? kind[0].toUpperCase() + kind.slice(1) : 'Class')))}</span>
+      <h2 id="sheetTitle">${esc(topic || e.subject)}</h2>
+      <p class="subj">${esc([topic ? e.subject : '', day + ', ' + fmtDate(dateOf(day))].filter(Boolean).join(' · '))}</p>
+      <div class="tiles">
+        ${tile('Time slot', esc(time || '—'))}
+        ${tile('Batch', isAll(e) ? 'Everyone' : esc(rollLabel(e)))}
+        ${tile(fac.length > 1 ? 'Faculty' : 'Faculty / Resident', fac.length ? lines(fac) : '—', true)}
+        ${tile('Venue', venue.length ? PIN + lines(venue).replace('<span class="ln">', '<span class="ln" style="display:inline">') : '—', true)}
+        ${rangeOf(e) ? tile('Posting dates', esc(rangeOf(e)), true) : ''}
+        ${dist ? tile('Who goes where', dist, true, true) : ''}
+      </div>`;
+  }
+  let sheetReturnFocus = null;
+  function openSheet(e, day){
+    $('#sheetBody').innerHTML = sheetHTML(e, day);
+    const sh = $('#sheet'), bg = $('#sheetBg');
+    sheetReturnFocus = document.activeElement;
+    sh.hidden = false; bg.hidden = false; sh.scrollTop = 0; sh.style.transform = '';
+    document.body.classList.add('sheet-open');
+    requestAnimationFrame(() => requestAnimationFrame(() => { sh.classList.add('show'); bg.classList.add('show'); }));
+    /* A history entry, so the phone's Back button closes the sheet instead of leaving the page. */
+    if (!(history.state && history.state.jhSheet)) history.pushState({ jhSheet: true }, '');
+    $('#sheetClose').focus({ preventScroll: true });
+  }
+  function hideSheet(){
+    const sh = $('#sheet'), bg = $('#sheetBg');
+    if (sh.hidden) return;
+    sh.classList.remove('show'); bg.classList.remove('show'); sh.style.transform = '';
+    document.body.classList.remove('sheet-open');
+    setTimeout(() => { if (!sh.classList.contains('show')){ sh.hidden = true; bg.hidden = true; } }, 320);
+    if (sheetReturnFocus && sheetReturnFocus.focus) sheetReturnFocus.focus({ preventScroll: true });
+  }
+  const closeSheet = () => { if (history.state && history.state.jhSheet) history.back(); else hideSheet(); };
+  window.addEventListener('popstate', hideSheet);
+  $('#sheetClose').addEventListener('click', closeSheet);
+  $('#sheetBg').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+  /* Swipe down to dismiss (only when the sheet is scrolled to its top). */
+  (() => {
+    const sh = $('#sheet'); let y0 = null, dy = 0;
+    sh.addEventListener('touchstart', ev => { y0 = sh.scrollTop <= 0 ? ev.touches[0].clientY : null; dy = 0; sh.style.transition = 'none'; }, { passive: true });
+    sh.addEventListener('touchmove', ev => { if (y0 == null) return; dy = Math.max(0, ev.touches[0].clientY - y0); if (dy) sh.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    sh.addEventListener('touchend', () => { sh.style.transition = ''; if (y0 != null && dy > 90) closeSheet(); else sh.style.transform = ''; y0 = null; });
+  })();
+  /* Tap / Enter / Space on anything with a data-key opens its sheet. */
+  function wireTaps(container){
+    const go = el => { const t = tapTargets.get(el.dataset.key); if (t) openSheet(t.e, t.day); };
+    container.addEventListener('click', ev => { const el = ev.target.closest('[data-key]'); if (el && container.contains(el)) go(el); });
+    container.addEventListener('keydown', ev => {
+      if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target.matches('[data-key]')) return;
+      ev.preventDefault(); go(ev.target);
+    });
+  }
+
   const todayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
   /* Mon to Sat always, plus Sunday when it appears in the timetable, is marked, or is today (inside the shown week) */
   function visibleDays(){
@@ -509,18 +651,18 @@ footer a{color:var(--accent)}
         const flag = i === nowIdx ? '<span class="flag">Now</span>' : i === nextIdx ? '<span class="flag next">Next</span>' : '';
         const kind = kindOf(e.class);
         const kindIcon = kind === 'lecture' ? LECTURE_ICON : kind === 'practical' ? PRACTICAL_ICON : '';
-        return `<article class="card2 ${kind}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}">
+        const k = entryKey(day, e); tapTargets.set(k, { e, day });
+        return `<article class="card2 ${kind}${i === nowIdx ? ' now' : ''}${live(e) ? '' : ' past'}" data-key="${esc(k)}" role="button" tabindex="0" aria-haspopup="dialog" aria-label="${esc(e.subject)} details">
           <div class="t"><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div>
           <div>
             <h3>${esc(e.subject)}${flag}</h3>
             <p class="meta">
               ${e.class ? `<span class="kind">${kindIcon}${esc(e.class)}</span>` : ''}
-              ${e.faculty ? `<span>${PERSON}${esc(e.faculty)}</span>` : ''}
               ${e.location ? `<span>${PIN}${esc(e.location)}</span>` : ''}
               <span>${esc(rollLabel(e))}</span>
-              ${rangeOf(e) ? `<span>${esc(rangeOf(e))}</span>` : ''}
             </p>
           </div>
+          <span class="chev2">${CHEVRON}</span>
         </article>`;
       }).join('');
       return;
@@ -533,7 +675,7 @@ footer a{color:var(--accent)}
     out.innerHTML = head + [...slots].map(([time, list]) => {
       const p = list[0].parts;
       return `<div class="slot"><h3>${esc(p.join(' – '))}</h3><ul>` + list.map(e =>
-        `<li class="${[state.roll && rollMatches(e.rolls, state.roll) ? 'mine' : '', isOver(e) ? 'past' : ''].join(' ').trim()}">
+        `<li class="${[state.roll && rollMatches(e.rolls, state.roll) ? 'mine' : '', isOver(e) ? 'past' : ''].join(' ').trim()}" data-key="${esc(entryKey(day, e))}" role="button" tabindex="0" aria-haspopup="dialog">${(tapTargets.set(entryKey(day, e), { e, day }), '')}
           <span class="rolls">${esc(hasNums(e.rolls) || /^all/i.test(e.rolls || 'All') ? fmtRolls(e.rolls) : rollLabel(e))}${e.batch ? `<small>Batch ${esc(e.batch)}</small>` : ''}</span>
           <span class="what"><b>${esc(e.subject)}</b>${e.class ? `<small>${esc(e.class)}</small>` : ''}${e.faculty ? `<small>${esc(e.faculty)}</small>` : ''}${rangeOf(e) ? `<small>${esc(rangeOf(e))}</small>` : ''}</span>
           <span class="loc">${esc(e.location)}</span>
@@ -753,51 +895,68 @@ footer a{color:var(--accent)}
     $('#messReminder').hidden = true;
   });
 
-  /* ---- Home: announcements. Two sources merged into one box: hand-edited announcements.json
-     (manual, for anything that isn't in a timetable file) and auto-detected ones pulled straight
-     out of the current week's timetable.json by keyword (e.g. "Internal Assessment" classes,
-     including ones add_clinics resolved to a specific batch during clinics hours). Auto ones need
-     no manual editing at all - they're recomputed fresh from state.entries every time a timetable
-     loads or the roll changes, so the moment next week's timetable replaces this one, an entry
-     that isn't in the new week just stops matching and quietly disappears. A batch-scoped one
-     (rolls other than "All") only shows once a matching roll is typed, same as the rest of the
-     site; a common one (rolls "All"/unspecified) always shows. Add more keywords to
-     ANNOUNCEMENT_KEYWORDS below as needed - each needs no other code change. ---- */
-  function renderAnnouncements(list){
-    const el = $('#announceBox');
-    if (!Array.isArray(list) || !list.length){ el.hidden = true; return; }
-    el.hidden = false;
-    el.querySelector('.body').innerHTML = list.map(a =>
-      `<div class="note">${a.title ? `<b>${esc(a.title)}</b> — ` : ''}${esc(a.text || '')}${a.date ? `<span class="date">${esc(a.date)}</span>` : ''}</div>`
-    ).join('');
-  }
+  /* ---- Home: announcements. Two sources in one box:
+     1. Auto - any class in the current week's timetable.json whose class/subject mentions an
+        internal assessment (common spellings/abbreviations included). Nothing to edit by hand:
+        it's worked out from the timetable every time the page loads, the roll changes, and once
+        a minute, so it vanishes on its own once the assessment is over or next week's timetable
+        replaces this one. Scoped like the timetable itself: an assessment held during clinics
+        carries the posted batch's rolls (the parser assigns them), so only that batch sees it;
+        one for "All" shows to everyone, even before a roll is typed.
+     2. Manual - announcements.json, now with two optional extras per item:
+        "rolls": "39-76" (only those rolls see it) and "until": "YYYY-MM-DD" (hidden after that
+        day). An ISO "date" is shown formatted with the year. Old items keep working as-is. ---- */
   const ANNOUNCEMENT_KEYWORDS = [
-    { re: /internal\s*assessment/i, label: 'Internal Assessment' },
+    { re: /\bint(?:ernal|\.)?\s*assess?e?ments?\b/i, label: 'Internal Assessment' },
   ];
-  function autoAnnouncements(){
+  /* Every keyword match in the shown week that isn't over yet, whoever it's for. */
+  function assessmentMatches(){
     if (!state.weekStart) return [];
-    const seen = new Set(), out = [];
+    const now = new Date(), todayISO = iso(now), nowMin = now.getHours() * 60 + now.getMinutes();
+    const out = [], seen = new Set();
     for (const day of DAYS){
-      const d = dateOf(day);
-      for (const e of state.entries){
-        if (!applies(e, d) || !rollMatches(e.rolls, state.roll)) continue;
-        const hit = ANNOUNCEMENT_KEYWORDS.find(k => k.re.test(`${e.class || ''} ${e.subject || ''}`));
+      const d = dateOf(day), k = iso(d);
+      if (k < todayISO) continue;
+      for (const e of entriesOn(day)){
+        const hit = ANNOUNCEMENT_KEYWORDS.find(w => w.re.test(`${e.class || ''} ${e.subject || ''}`));
         if (!hit) continue;
-        const key = hit.label + '|' + iso(d) + '|' + (e.rolls || '');
+        if (k === todayISO && endMin(e) != null && nowMin >= endMin(e)) continue; /* already finished today */
+        const key = [hit.label, k, e.subject, e.rolls].join('|');
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({
-          title: hit.label,
-          text: [e.subject && e.subject !== hit.label ? e.subject : null, e.location, e.rolls && !/all/i.test(e.rolls) ? rollLabel(e) : null].filter(Boolean).join(' · '),
-          date: fmtDate(d),
-          _sort: iso(d)
-        });
+        out.push({ hit, e, day, d, common: rollMatches(e.rolls, '') });
       }
     }
-    return out.sort((a, b) => a._sort < b._sort ? -1 : a._sort > b._sort ? 1 : 0);
+    return out;
+  }
+  /* The ones this viewer should see: common ones always, batch ones only for a matching roll. */
+  const myAssessments = () => assessmentMatches().filter(m => m.common || (state.roll && rollMatches(m.e.rolls, state.roll)));
+  function whenChip(d){
+    const n = daysUntil(d);
+    return n === 0 ? '<span class="when">Today</span>' : n === 1 ? '<span class="when">Tomorrow</span>' : `<span class="when later">In ${n} days</span>`;
   }
   function renderAllAnnouncements(){
-    renderAnnouncements([...autoAnnouncements(), ...state.manualAnnouncements]);
+    const el = $('#announceBox');
+    const todayISO = iso(new Date());
+    const auto = myAssessments().map(m => {
+      const time = (m.e.parts || []).filter(Boolean).join(' – ');
+      const bits = [m.e.subject && !m.hit.re.test(m.e.subject) ? m.e.subject : '', m.e.location, m.common ? '' : rollLabel(m.e)].filter(Boolean);
+      return `<div class="note"><b>${esc(m.hit.label)}</b>${bits.length ? ' — ' + esc(bits.join(' · ')) : ''}<span class="date">${esc(m.day.slice(0, 3) + ', ' + fmtDate(m.d) + (time ? ' · ' + time : ''))}${whenChip(m.d)}</span></div>`;
+    });
+    const manual = (state.manualAnnouncements || [])
+      .filter(a => a && (a.title || a.text))
+      .filter(a => !a.until || String(a.until) >= todayISO)
+      .filter(a => !a.rolls || rollMatches(a.rolls, state.roll))
+      .map(a => {
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(a.date || '')) ? fmtISO(a.date) : a.date;
+        return `<div class="note">${a.title ? `<b>${esc(a.title)}</b>${a.text ? ' — ' : ''}` : ''}${esc(a.text || '')}${date ? `<span class="date">${esc(date)}</span>` : ''}</div>`;
+      });
+    /* Before a roll is typed, say so if a batch-only announcement is waiting, instead of hiding it silently. */
+    const waiting = !state.roll && assessmentMatches().some(m => !m.common);
+    const hint = waiting ? '<p class="hint">One batch has an internal assessment this week. Type your roll no. to see if it’s yours.</p>' : '';
+    const html = auto.join('') + manual.join('') + hint;
+    el.hidden = !html;
+    el.querySelector('.body').innerHTML = html;
   }
 
   /* ---- Home: "install this" banner. A PWA install prompt is otherwise invisible - Android/Chrome
@@ -865,6 +1024,7 @@ footer a{color:var(--accent)}
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const upcoming = (state.keyDates || [])
       .map(k => ({ ...k, d: parseISODateOnly(k.date) }))
+      .concat(myAssessments().map(m => ({ title: m.hit.label + (m.e.subject && !m.hit.re.test(m.e.subject) ? ' · ' + m.e.subject : ''), d: m.d, entry: m.e, day: m.day })))
       .filter(k => k.d && k.d >= now)
       .sort((a, b) => a.d - b.d);
     return upcoming[0] || null;
@@ -891,13 +1051,14 @@ footer a{color:var(--accent)}
       icon: CLOCK,
       pulse: !!current,
       text: [pick.subject, pick.location].filter(Boolean).join(' · '),
-      sub: pick.parts.filter(Boolean).join(' – ')
+      sub: pick.parts.filter(Boolean).join(' – '),
+      entry: pick, day: todayName()
     };
   }
   function dateLine(k){
     const n = daysUntil(k.d);
     const when = n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
-    return { kind: 'date', tag: 'Key date', icon: CALENDAR, pulse: n <= 1, text: k.title, sub: when[0].toUpperCase() + when.slice(1) };
+    return { kind: 'date', tag: 'Key date', icon: CALENDAR, pulse: n <= 1, text: k.title, sub: when[0].toUpperCase() + when.slice(1), entry: k.entry, day: k.day };
   }
   function renderTodayStrip(){
     const el = $('#todayStrip');
@@ -912,11 +1073,24 @@ footer a{color:var(--accent)}
     else if (k && kn <= 7) line = dateLine(k);
     if (!line){ el.hidden = true; return; }
     el.hidden = false;
-    el.className = 'strip ' + line.kind;
+    /* Tappable whenever the line is about a real timetable class: opens into the same details
+       as the Timetable cards. Stays open across the 60s refresh while it's the same class. */
+    /* Tappable whenever the line is about a real timetable class: opens the same details sheet. */
+    stripLine = line.entry ? line : null;
+    el.className = 'strip ' + line.kind + (stripLine ? ' tappable' : '');
+    if (stripLine){ el.setAttribute('role', 'button'); el.tabIndex = 0; el.setAttribute('aria-haspopup', 'dialog'); }
+    else { el.removeAttribute('role'); el.removeAttribute('tabindex'); el.removeAttribute('aria-haspopup'); }
     $('#stripIcon').innerHTML = line.icon;
     $('#stripTag').innerHTML = (line.pulse ? '<span class="dot"></span>' : '') + esc(line.tag);
     $('#stripTxt').innerHTML = esc(line.text) + (line.sub ? `<span class="sub">${esc(line.sub)}</span>` : '');
+    $('#stripChev').innerHTML = stripLine ? CHEVRON : '';
   }
+  let stripLine = null;
+  $('#todayStrip').addEventListener('click', () => { if (stripLine) openSheet(stripLine.entry, stripLine.day); });
+  $('#todayStrip').addEventListener('keydown', ev => {
+    if (!stripLine || (ev.key !== 'Enter' && ev.key !== ' ') || ev.target !== ev.currentTarget) return;
+    ev.preventDefault(); openSheet(stripLine.entry, stripLine.day);
+  });
   function loadKeyDates(list){
     state.keyDates = Array.isArray(list) ? list : [];
     renderTodayStrip();
@@ -958,7 +1132,7 @@ footer a{color:var(--accent)}
        crashing (timetable, before weekStart exists) or flashing a false "couldn't load" (mess
        bill/attendance, before their summary has arrived). */
     if (view === 'timetable' && state.weekStart) { renderDays(); renderOut(); }
-    if (view === 'home') { renderReminder(); renderTodayStrip(); }
+    if (view === 'home') { renderReminder(); renderTodayStrip(); renderAllAnnouncements(); }
     if (view === 'messbill' && messReady) renderMessBill();
     if (view === 'attendance' && attReady) renderAttendance();
     window.scrollTo(0, 0);
@@ -968,7 +1142,8 @@ footer a{color:var(--accent)}
 
   renderWelcome();
   initInstallBanner();
-  setInterval(renderTodayStrip, 60000);
+  setInterval(() => { renderTodayStrip(); renderAllAnnouncements(); }, 60000);
+  wireTaps($('#out'));
 
   fetch('timetable.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -1011,6 +1186,14 @@ footer a{color:var(--accent)}
      the last successful data load when the network is down. Safe to skip silently if the
      browser doesn't support it or the file isn't there yet. */
   if ('serviceWorker' in navigator){
+    /* When an updated sw.js takes over (a new upload), reload once so the fresh page shows right
+       away instead of on the visit after. Skipped on the very first install (nothing to replace). */
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      reloaded = true; location.reload();
+    });
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 })();
