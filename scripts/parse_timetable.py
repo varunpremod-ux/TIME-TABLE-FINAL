@@ -332,11 +332,19 @@ def load_legend_csv(path):
     return legend
 
 
+HONOURS = re.compile(r"^(?:PVSM|AVSM|UYSM|SYSM|YSM|VSM|SM|VM|NM|PVC|MVC|VrC|KC|SC|AVC|ADC)(?:\*{1,2}|\s*\(G\))?$", re.I)
+
+
 def resolve_faculty(raw, legend, missing):
     out = []
     for tok in re.split(r"\s*(?:,|/|&|\+|;|\band\b)\s*", raw):
         tok = tok.strip()
         if not tok:
+            continue
+        # A service award after a full name ("Wg Cdr Sandeep Kumar, VSM") belongs to that name - it
+        # is not a faculty code to look up.
+        if HONOURS.match(tok) and out and " " in out[-1]:
+            out[-1] += ", " + tok
             continue
         name = legend.get(fkey(tok))
         if name:
@@ -923,10 +931,15 @@ def add_clinics(entries, rows, rules, term):
         return bool(dept_keys(f"{e['subject']} {e['class']}") or dept_keys(e["location"])
                     or dept_keys(os.path.splitext(e.get("_src", ""))[0]))
 
-    # A clinic row, or any department row in the clinic hours (for example an internal assessment):
-    # the students are in that department's clinics then, so it belongs to the batch posted there.
-    is_clinic = lambda e: re.search(r"clinic", f"{e['class']} {e['subject']}", re.I) or (
-        in_clinic_slot(e) and names_department(e))
+    # Decided by TIME first: anything in the clinic hours (10:30 - 13:00, a little slack either side,
+    # or TIMETABLE_CLINIC_TIME) is clinics - whatever it's called (clinics, IA, EOP IA, ward
+    # teaching...) - so it belongs to the batch posted to that department. The whole word "Clinics"
+    # still counts for a row whose time is missing or a bit off; words like "Clinical" never do.
+    # Escape hatch: write Common / Everyone / All batches in the Roll No column to keep a row in
+    # the clinic hours for the whole batch.
+    common = lambda e: re.search(r"\b(common|everyone|all\s+batch(?:es)?|whole\s+batch)\b", e.get("rolls") or "", re.I)
+    is_clinic = lambda e: not common(e) and (
+        in_clinic_slot(e) or re.search(r"\bclinics?\b", f"{e['class']} {e['subject']}", re.I))
     clin = [dict(e) for e in entries if is_clinic(e)]
     entries = [e for e in entries if not is_clinic(e)]
     for e in clin:  # subject/class first, then the venue ("Paed Ward"), then the file name
