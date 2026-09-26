@@ -149,6 +149,8 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .days button.today::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--signal)}
 .weeknote{margin:16px 2px 0;font-size:15px;color:var(--muted)}
 .weeknote b{color:var(--ink);font-weight:600}
+.movednote{margin:14px 2px 0;padding:10px 13px;border-radius:12px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--ink);font-size:14.5px}
+.movednote b{font-weight:700}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .head{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 0}
@@ -659,6 +661,35 @@ footer a{color:var(--accent)}
     $('#days [aria-pressed=true]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
 
+  /* Which day the Timetable opens on. Today - until your last class of the day has finished; after
+     that it moves on to the next day this week that has classes for you, so in the evening it's
+     already showing tomorrow. Stays on today if nothing later in the week has classes (e.g. Saturday
+     evening before next week's timetable is uploaded), and on a holiday. Once you tap a day
+     yourself it leaves your choice alone. */
+  const todayInWeek = () => {
+    if (!state.weekStart) return false;
+    const t = iso(new Date());
+    return t >= iso(state.weekStart) && t <= iso(addDays(state.weekStart, 6));
+  };
+  const classesFor = day => entriesOn(day).filter(e => !state.roll || rollMatches(e.rolls, state.roll));
+  function todayIsDone(){
+    const list = classesFor(todayName());
+    const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    return list.length > 0 && list.every(e => endMin(e) != null && nowMin >= endMin(e));
+  }
+  function defaultDay(){
+    if (!todayInWeek()) return 'Monday';
+    const today = todayName();
+    if (!todayIsDone()) return today;
+    return DAYS.slice(DAYS.indexOf(today) + 1).find(d => classesFor(d).length) || today;
+  }
+  /* Re-pick the day (when the user hasn't chosen one) - on load, when the roll changes, every minute. */
+  function autoDay(){
+    if (state.dayPicked || !state.weekStart) return;
+    const d = defaultDay();
+    if (d !== state.day){ state.day = d; renderDays(); }
+  }
+
   function renderOut(){
     const out = $('#out');
     const day = state.day;
@@ -684,7 +715,10 @@ footer a{color:var(--accent)}
     if (state.view === 'mine'){
       if (!state.roll){ out.innerHTML = notice + '<p class="empty">Type your roll no. on the Home screen to see your classes.</p>'; return; }
       const mine = dayEntries.filter(e => rollMatches(e.rolls, state.roll));
-      const head = `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, ${mine.length} ${mine.length === 1 ? 'class' : 'classes'}</p></div>` + notice;
+      const moved = !state.dayPicked && todayInWeek() && day !== todayName() && todayIsDone();
+      const tomorrow = DAYS[DAYS.indexOf(todayName()) + 1] === day;
+      const head = (moved ? `<p class="movednote">Today’s classes are over, so here’s <b>${tomorrow ? 'tomorrow' : day}</b>. Tap a day above to see any other.</p>` : '')
+        + `<div class="head"><h2>${day}</h2><p>${fmtDate(date)}, ${mine.length} ${mine.length === 1 ? 'class' : 'classes'}</p></div>` + notice;
       if (!mine.length){ out.innerHTML = head + `<p class="empty">Nothing on ${day} for roll ${esc(state.roll)}.</p>`; return; }
       const live = e => !isOver(e);
       const nowIdx = isToday ? mine.findIndex(e => e._s != null && e._e != null && nowMin >= e._s && nowMin < e._e) : -1;
@@ -797,11 +831,11 @@ footer a{color:var(--accent)}
     const w = d.week && d.week.from ? d.week.from.split('-').map(Number) : null;
     state.weekStart = w ? new Date(w[0], w[1] - 1, w[2]) : mondayOf(new Date());
     const todayISO = iso(new Date());
-    state.day = todayISO >= iso(state.weekStart) && todayISO <= iso(addDays(state.weekStart, 6)) ? todayName() : 'Monday';
+    state.day = defaultDay();
     $('#controls').hidden = false;
     if (state.pdf){ $('#foot').hidden = false; $('#foot').innerHTML = `<a href="${esc(state.pdf)}">Open the original PDF</a>`; }
     renderWelcome(); renderWeek(); renderTodayStrip(); renderAllAnnouncements();
-    setInterval(renderOut, 60000);
+    setInterval(() => { autoDay(); renderOut(); }, 60000);
   }
 
   /* ---- Mess Bill ---- */
@@ -1208,14 +1242,30 @@ footer a{color:var(--accent)}
     if (todayISO < iso(state.weekStart) || todayISO > iso(addDays(state.weekStart, 6))) return [];
     return entriesOn(todayName()).filter(e => rollMatches(e.rolls, state.roll));
   }
+  /* Once today's classes are done (or there are none today), the strip looks ahead to the first
+     class of the next day this week that has one for you. */
+  function nextDayLine(){
+    if (!state.roll || !todayInWeek()) return null;
+    const i = DAYS.indexOf(todayName());
+    const day = DAYS.slice(i + 1).find(d => entriesOn(d).some(e => rollMatches(e.rolls, state.roll)));
+    if (!day) return null;
+    const first = entriesOn(day).find(e => rollMatches(e.rolls, state.roll));
+    const when = day === DAYS[i + 1] ? 'Tomorrow' : day;
+    return {
+      kind: 'next', tag: 'Up next · ' + when, icon: CLOCK, pulse: false,
+      text: [first.subject, first.location].filter(Boolean).join(' · '),
+      sub: [when + ', ' + fmtDate(dateOf(day)), first.parts.filter(Boolean).join(' – ')].filter(Boolean).join(' · '),
+      entry: first, day
+    };
+  }
   function classLine(){
     const mine = todayEntriesForRoll();
-    if (!mine.length) return null;
+    if (!mine.length) return nextDayLine();
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
     const current = mine.find(e => e._s != null && e._e != null && nowMin >= e._s && nowMin < e._e);
     const pick = current || mine.find(e => e._s != null && e._s > nowMin);
-    if (!pick) return null;
+    if (!pick) return nextDayLine();
     return {
       kind: current ? 'now' : 'next',
       tag: current ? 'Happening now' : 'Up next',
@@ -1274,7 +1324,7 @@ footer a{color:var(--accent)}
     state.roll = e.target.value.trim();
     store.set('roll', state.roll);
     $('#calMsg').textContent = '';
-    renderWelcome(); renderReminder(); renderTodayStrip(); renderAllAnnouncements(); renderOut();
+    autoDay(); renderWelcome(); renderReminder(); renderTodayStrip(); renderAllAnnouncements(); renderOut();
     /* Debounced: each keystroke would otherwise fetch a different (possibly someone else's)
        roll's file while typing - e.g. "136" briefly fetches roll 1, then 13, then 136. */
     clearTimeout(rollDebounce);
@@ -1289,7 +1339,7 @@ footer a{color:var(--accent)}
   $('#calBtn').addEventListener('click', addToCalendar);
   $('#days').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    state.day = b.dataset.day; renderDays(); renderOut();
+    state.day = b.dataset.day; state.dayPicked = true; renderDays(); renderOut();
   });
 
   /* ---- routing: Home + three sections, switched by URL hash, nothing ever reloads ---- */
@@ -1302,7 +1352,7 @@ footer a{color:var(--accent)}
        refresh while on it - shows the loading skeleton until its own fetch settles, instead of
        crashing (timetable, before weekStart exists) or flashing a false "couldn't load" (mess
        bill/attendance, before their summary has arrived). */
-    if (view === 'timetable' && state.weekStart) { renderDays(); renderOut(); }
+    if (view === 'timetable' && state.weekStart) { autoDay(); renderDays(); renderOut(); }
     if (view === 'home') { renderReminder(); renderTodayStrip(); renderAllAnnouncements(); }
     if (view === 'messbill' && messReady) renderMessBill();
     if (view === 'attendance' && attReady) renderAttendance();
@@ -1315,6 +1365,12 @@ footer a{color:var(--accent)}
   initInstallBanner();
   setInterval(() => { renderTodayStrip(); renderAllAnnouncements(); }, 60000);
   wireTaps($('#out'));
+  /* Coming back to the app after a while (phones pause timers in the background): catch up at once. */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !state.weekStart) return;
+    autoDay(); renderTodayStrip(); renderAllAnnouncements();
+    if (!$('#view-timetable').hidden) renderOut();
+  });
 
   fetch('timetable.json', { cache: 'no-store' })
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
