@@ -477,7 +477,7 @@ def parse(path):
         for idx, field in colmap.items():
             val = row[idx] if idx < len(row) else ""
             if field == "day" and val:
-                day_date = date_in_text(val)
+                day_date = date_in_text(val) or date_from_day_cell(val)
                 val = norm_day(val) or ""
                 if val and val != carry.get("day"):
                     carry = {"day": val}
@@ -634,14 +634,44 @@ def day_heading(cell):
     if not m:
         return None
     rest = cell.strip()[m.end():]
-    iso = date_in_text(rest)
+    iso = date_in_text(rest) or date_from_day_cell(cell)
     rest = DATE_TEXT.sub("", rest)
+    rest = DAY_NUM.sub("", rest)
     if re.sub(r"[\s.,:;()\-]+", "", rest):
         return None
     return norm_day(cell), iso
 
 
 MONTHS = {m.lower()[:3]: i for i, m in enumerate(calendar.month_name) if m}
+DAY_NUM = re.compile(r"(?<!\d)(\d{1,2})(?:st|nd|rd|th)?(?:\s*(?:of\s+)?([A-Za-z]{3,9})\.?)?(?:\s*,?\s*(\d{4}))?(?!\d)", re.I)
+
+
+def date_from_day_cell(cell):
+    """A day written with only part of its date - 'Monday, 28th', 'Mon 28 Sep', 'Monday 28/9' -
+    -> the full date: the one nearest today that has that day number AND falls on that weekday
+    (a weekday + day-of-month pair only recurs every few months, so this is unambiguous)."""
+    cell = (cell or "").strip()
+    wd = norm_day(cell)
+    if not wd:
+        return ""
+    rest = DAY_PREFIX.sub("", cell, count=1)
+    m = re.search(r"(?<!\d)(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?(?!\d)", rest)  # 28/9 or 28/09/26
+    if m:
+        n, mon = int(m.group(1)), int(m.group(2))
+    else:
+        m = DAY_NUM.search(rest)
+        if not m:
+            return ""
+        n = int(m.group(1))
+        mon = MONTHS.get((m.group(2) or "").lower()[:3]) if m.group(2) else None
+        if m.group(2) and not mon:
+            mon = None
+    if not 1 <= n <= 31 or (mon is not None and not 1 <= mon <= 12):
+        return ""
+    today = date.today()
+    hits = [today + timedelta(days=k) for k in range(-45, 46)]
+    hits = [d for d in hits if d.day == n and DAY_ORDER[d.weekday()] == wd and (mon is None or d.month == mon)]
+    return min(hits, key=lambda d: abs((d - today).days)).isoformat() if hits else ""
 
 
 def monday_of(d):
@@ -683,6 +713,52 @@ def week_from_name(path):
         b = parse_date(f"{m.group(2)} {m.group(3)} {m.group(4)}")
         if a and b and a <= b:
             return a, b
+    return week_from_name_no_year(name)
+
+
+def _month(tok):
+    return MONTHS.get((tok or "").lower()[:3])
+
+
+def _nearest_year(day, month, today=None):
+    """The year that puts day/month closest to today - file names usually leave the year out."""
+    today = today or date.today()
+    best = None
+    for y in (today.year - 1, today.year, today.year + 1):
+        try:
+            d = date(y, month, day)
+        except ValueError:
+            continue
+        if best is None or abs((d - today).days) < abs((best - today).days):
+            best = d
+    return best
+
+
+def week_from_name_no_year(name):
+    """Week ranges written without a year, the way the weekly programmes are usually named:
+    '28sep-04oct', '27 sep to 03 oct', '21-27_sep', '21-26 sep'. The year is the one nearest today."""
+    m = re.search(r"(?<!\d)(\d{1,2})[-_ ]*([A-Za-z]{3,9})[-_ ]*(?:-|_|to)+[-_ ]*(\d{1,2})[-_ ]*([A-Za-z]{3,9})", name, re.I)
+    if m and _month(m.group(2)) and _month(m.group(4)):
+        a = _nearest_year(int(m.group(1)), _month(m.group(2)))
+        if a:
+            try:
+                b = date(a.year, _month(m.group(4)), int(m.group(3)))
+            except ValueError:
+                b = None
+            if b and b < a:
+                b = date(a.year + 1, b.month, b.day)  # 28dec-03jan
+            if b and 0 <= (b - a).days <= 13:
+                return a.isoformat(), b.isoformat()
+    m = re.search(r"(?<!\d)(\d{1,2})[-_ ]+(\d{1,2})[-_ ]*([A-Za-z]{3,9})", name, re.I)
+    if m and _month(m.group(3)):
+        a = _nearest_year(int(m.group(1)), _month(m.group(3)))
+        if a:
+            try:
+                b = date(a.year, a.month, int(m.group(2)))
+            except ValueError:
+                b = None
+            if b and 0 <= (b - a).days <= 13:
+                return a.isoformat(), b.isoformat()
     return None
 
 
@@ -1070,6 +1146,14 @@ def collect(args):
     return files, legend_files, batch_files, clinic_files, name_files
 
 
+def is_block_row(e):
+    """A routine slot from a multi-week block timetable (overall_2026-09-07_to_2027-01-24.csv), as
+    opposed to a department's own weekly programme."""
+    if not (e.get("from") and e.get("to")):
+        return False
+    return (date.fromisoformat(e["to"]) - date.fromisoformat(e["from"])).days > 13
+
+
 def main():
     if len(sys.argv) < 3:
         sys.exit(__doc__)
@@ -1126,7 +1210,9 @@ def main():
         if found and week:
             print(f"{name}: shows only in the week {week[0]} to {week[1]}")
             if (date.fromisoformat(week[1]) - date.fromisoformat(week[0])).days <= 6:
-                weekly_files.append((monday_of(date.fromisoformat(week[0])), name))
+                # the Monday of the week the range mostly covers (a "27 Sep - 3 Oct" file starts on a Sunday)
+                start = date.fromisoformat(week[0])
+                weekly_files.append((monday_of(start + timedelta(days=1 if start.weekday() == 6 else 0)), name))
         elif found and any(not e.get("from") for e in found):
             print(f"WARNING {name}: has no dates, so it repeats every week. Add a Date column, or put the "
                   f"week's start date in the file name (for example {os.path.splitext(name)[0]}_2026-09-21"
@@ -1165,7 +1251,11 @@ def main():
             iso = h.get("date", "")
             if iso:
                 dd = date.fromisoformat(iso)
-                if any(applies_on(e, dd) for e in entries if not e.get("rot")):
+                # A day a weekly programme marks "Holiday" (e.g. Gandhi Jayanti) wins over the overall
+                # block timetable's routine slots for that date; only a real class that week cancels it.
+                blockers = [e for e in entries if not e.get("rot") and applies_on(e, dd)
+                            and not (h.get("explicit") and is_block_row(e))]
+                if blockers:
                     continue
             elif any(e["day"] == h["day"] and not e.get("from") for e in entries if not e.get("rot")):
                 continue
@@ -1178,6 +1268,11 @@ def main():
     cancelled = {h["date"] for h in holidays if h["date"] and h["explicit"]}
     if cancelled:
         entries = [e for e in entries if not (e.get("rot") and e.get("from") in cancelled)]
+        for e in entries:  # the block timetable's routine slots are skipped on those dates too
+            if is_block_row(e):
+                off = [c for c in sorted(cancelled) if applies_on(e, date.fromisoformat(c))]
+                if off:
+                    e["skip"] = sorted(set(e.get("skip") or []) | set(off))
     if holidays:
         print("Holidays: " + ", ".join((h["date"] + " " if h["date"] else "every ") + h["day"]
                                         + (f" ({h['note']})" if h["note"] else "") for h in holidays))
