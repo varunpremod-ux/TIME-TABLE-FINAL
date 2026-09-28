@@ -66,6 +66,8 @@ h1{font-size:clamp(28px,7vw,38px);font-weight:800;letter-spacing:-.02em}
 .banner.install .txt b{color:var(--ink)}
 .banner.install button{border-color:var(--accent);color:var(--accent)}
 .banner.install button#installBtn{background:var(--accent);color:var(--accent-ink)}
+.installlink{margin:18px 0 0;text-align:center}
+.installlink button{border:0;background:none;padding:6px 10px;color:var(--muted);font:600 14px Figtree,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 
 .strip{--tint:var(--accent);--tint-ink:var(--accent-ink);position:relative;display:flex;align-items:center;gap:13px;margin:0 0 14px;padding:13px 16px;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:stripIn .4s cubic-bezier(.2,.8,.3,1) both}
 .strip::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,color-mix(in srgb,var(--tint) 16%,transparent),transparent 65%);pointer-events:none}
@@ -367,6 +369,7 @@ footer a{color:var(--accent)}
         </div>
       </div>
     </div>
+    <p class="installlink" id="installLink" hidden><button type="button" id="installLinkBtn">How do I install this app?</button></p>
   </section>
 
   <section id="view-timetable" hidden>
@@ -1173,45 +1176,53 @@ footer a{color:var(--accent)}
   function initInstallBanner(){
     const el = $('#installBanner');
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    const dismissCount = parseInt(store.get('installBannerDismissCount') || '0', 10);
-    /* "Maybe later" only hides it for that visit until it's been dismissed 3 times total,
-       then it stops appearing for good - gives it a few chances to be noticed without
-       becoming permanently annoying. */
-    if (isStandalone || store.get('installBannerDismissed') === '1' || dismissCount >= 3) return;
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    if (isStandalone) return; /* already running as the installed app */
+    const ua = navigator.userAgent;
+    const isIOS = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    /* Opened from inside another app (Instagram, Facebook, Snapchat, LinkedIn, an Android WebView...):
+       those built-in browsers can't install anything - the page has to be opened in the real browser. */
+    const inApp = /FBAN|FBAV|Instagram|Snapchat|LinkedInApp|Line\/|MicroMessenger|; wv\)/i.test(ua);
     let deferredPrompt = null;
     const setText = (t, showBtn) => { $('#installText').textContent = t; $('#installBtn').hidden = !showBtn; };
+    const manual = () => inApp
+      ? (isIOS ? 'You’ve opened this inside another app, which can’t install it. Tap ⋯ or the compass icon and choose "Open in Safari", then tap Share → "Add to Home Screen."'
+               : 'You’ve opened this inside another app, which can’t install it. Tap ⋮ and choose "Open in Chrome" (or your browser), then install from there.')
+      : isIOS ? 'Open this in Safari, tap the Share icon, then "Add to Home Screen."'
+      : 'Tap ⋮ at the top right of Chrome and choose "Install app" or "Add to Home screen." Don’t see it? Choose "Open in Chrome" first (links opened from WhatsApp or Telegram can open in a mini-browser).';
+    setText(manual(), false);
 
-    if (isIOS){
-      setText('Tap the Share icon in Safari, then "Add to Home Screen."', false);
-    } else {
-      /* Shown immediately as a safe fallback for any browser that never fires the event
-         (Firefox mobile, in-app browsers, etc.) - upgraded to a real one-tap Install button
-         the moment (and if) the browser actually offers one. */
-      setText('Open your browser menu and choose "Add to Home screen" or "Install app."', false);
-      window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-        setText('Add this to your home screen for one-tap access, even with a weak signal.', true);
-      });
-    }
-    el.hidden = false;
+    /* Chrome decides when it's willing to offer one-tap install (it can take a few taps / seconds, and
+       never happens in mini-browsers) - listen for it the whole time, even while the banner is dismissed,
+       so the button is ready if the banner is reopened. */
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setText('Add this to your home screen for one-tap access, even with a weak signal.', true);
+    });
+    const show = () => { el.hidden = false; $('#installLink').hidden = true; };
+    const hide = () => { el.hidden = true; $('#installLink').hidden = false; };
+
+    /* "Maybe later" hides it for that visit; after 3 of those it stops popping up on its own - but the
+       small "How do I install this app?" link at the bottom of Home always brings it back. */
+    const dismissCount = parseInt(store.get('installBannerDismissCount') || '0', 10);
+    if (store.get('installBannerDismissed') === '1' || dismissCount >= 3) hide(); else show();
 
     $('#installBtn').addEventListener('click', async () => {
-      if (!deferredPrompt) return;
+      if (!deferredPrompt){ setText(manual(), false); return; }
       deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
+      const choice = await deferredPrompt.userChoice;
       deferredPrompt = null;
-      el.hidden = true;
-      store.set('installBannerDismissed', '1');
+      if (choice && choice.outcome === 'accepted'){ el.hidden = true; $('#installLink').hidden = true; store.set('installBannerDismissed', '1'); }
+      else setText(manual(), false);
     });
     $('#installDismiss').addEventListener('click', () => {
-      el.hidden = true;
-      const n = dismissCount + 1;
+      hide();
+      const n = parseInt(store.get('installBannerDismissCount') || '0', 10) + 1;
       store.set('installBannerDismissCount', String(n));
       if (n >= 3) store.set('installBannerDismissed', '1');
     });
-    window.addEventListener('appinstalled', () => { store.set('installBannerDismissed', '1'); el.hidden = true; });
+    $('#installLinkBtn').addEventListener('click', () => { show(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    window.addEventListener('appinstalled', () => { store.set('installBannerDismissed', '1'); el.hidden = true; $('#installLink').hidden = true; });
   }
 
   /* ---- Home: "today strip" - one line combining "next class" and "key dates", whichever
