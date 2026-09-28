@@ -968,13 +968,26 @@ def apply_overrides(entries, wk_days):
             if not ab:
                 continue
             for b in today[i + 1:]:
-                if not same_subject(a["subject"], b["subject"]):
-                    continue
-                if a["rolls"] not in ("All", "") and b["rolls"] not in ("All", "") and a["rolls"] != b["rolls"]:
-                    continue  # a row for some batches only doesn't override the slot for the others
                 bb = time_bounds(b["time"])
                 if not bb or not (ab[0] < bb[1] and bb[0] < ab[1]):
                     continue
+                if not same_subject(a["subject"], b["subject"]):
+                    # Different subjects in the same slot: a department's real class for that week
+                    # replaces the overall timetable's routine slot (e.g. ENT's Monday 16:00 tutorial
+                    # over the "Radiology, 4th/5th Monday" slot) - when the real class is for
+                    # everyone, or for the same rolls. Nothing is folded in: they're different classes.
+                    at, bt = is_template(a), is_template(b)
+                    if at == bt:
+                        continue
+                    tmpl, real = (a, b) if at else (b, a)
+                    if real["rolls"] not in ("All", "") and real["rolls"] != tmpl["rolls"]:
+                        continue  # a class for some batches only leaves the slot to the others
+                    skip = tmpl.setdefault("skip", [])
+                    if d.isoformat() not in skip:
+                        skip.append(d.isoformat())
+                    continue
+                if a["rolls"] not in ("All", "") and b["rolls"] not in ("All", "") and a["rolls"] != b["rolls"]:
+                    continue  # a row for some batches only doesn't override the slot for the others
                 at, bt = is_template(a), is_template(b)
                 if at != bt:
                     keep, drop = (b, a) if at else (a, b)  # a generic block-timetable slot always loses
